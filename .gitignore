@@ -1,0 +1,12 @@
+*.dll
+*.exe
+.DS_Store
+example.tf
+terraform.tfplan
+terraform.tfstate
+bin/
+dist/
+.terraform/
+*.log
+.idea
+*.test
