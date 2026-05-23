@@ -9,25 +9,33 @@ description: |-
 
 Configure access to a [SigNoz](https://signoz.io) instance via its HTTP API. Authentication uses the `SigNoz-Api-Key` header.
 
+## Examples directory
+
+Every resource and data source has **copy-paste Terraform examples** in the repository [`examples/`](https://github.com/ksoviero/terraform-provider-signoz/tree/main/examples) directory. Use [`examples/README.md`](https://github.com/ksoviero/terraform-provider-signoz/blob/main/examples/README.md) as the index.
+
+Highlights include multi-signal alert rules (metrics, logs, traces), SAML/OIDC/Google/password auth domains, notification channels (Slack, email, webhook, PagerDuty, Opsgenie), route policies, dashboards, downtime schedules, and cloud integration accounts. Copy the resource or data source block you need together with [`examples/provider/provider.tf`](https://github.com/ksoviero/terraform-provider-signoz/blob/main/examples/provider/provider.tf) or your own `provider "signoz"` block.
+
 ## Example Usage
 
 ```terraform
+# Provider bootstrap for examples. Required/optional comments follow the provider schema.
+
 terraform {
   required_providers {
     signoz = {
-      source = "ksoviero/signoz"
+      source = "ksoviero/signoz" # required (terraform block)
     }
   }
 }
 
 provider "signoz" {
-  endpoint = "https://signoz.example.com"
-  api_key  = var.signoz_api_key
+  endpoint = "https://signoz.example.com" # optional (env: SIGNOZ_ENDPOINT)
+  api_key  = var.signoz_api_key           # optional (env: SIGNOZ_API_KEY)
 }
 
 variable "signoz_api_key" {
-  type      = string
-  sensitive = true
+  type      = string # required (variable)
+  sensitive = true   # optional (variable attribute)
 }
 ```
 
@@ -36,6 +44,6 @@ variable "signoz_api_key" {
 
 ### Optional
 
-- `api_key` (String, Sensitive) SigNoz API key value sent as the `SigNoz-Api-Key` header. May be set with the `SIGNOZ_API_KEY` environment variable.
-- `endpoint` (String) Base URL of the SigNoz instance, e.g. `https://signoz.example.com` (no trailing `/api`). May be set with the `SIGNOZ_ENDPOINT` environment variable.
-- `insecure` (Boolean) If true, TLS certificate verification is skipped. Use only in lab environments.
+- `api_key` (String, Sensitive) API key sent as the `SigNoz-Api-Key` header. Default: read from `SIGNOZ_API_KEY` when this attribute is omitted. Sensitive.
+- `endpoint` (String) Base URL of the SigNoz instance (scheme + host), e.g. `https://signoz.example.com`. Do not include `/api`. Default: read from `SIGNOZ_ENDPOINT` when this attribute is omitted.
+- `insecure` (Boolean) When `true`, TLS certificate verification is disabled. Default: `false`. Use only in lab environments.

@@ -48,10 +48,10 @@ func (d *AlertRuleDataSource) Metadata(_ context.Context, req datasource.Metadat
 
 func (d *AlertRuleDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = dataschema.Schema{
-		MarkdownDescription: "Reads a single SigNoz alert rule by `id` or by unique `alert` title.",
+		MarkdownDescription: docAlertRuleDataSourceIntro,
 		Attributes: map[string]dataschema.Attribute{
 			"id": dataschema.StringAttribute{
-				MarkdownDescription: "Rule UUID. Exactly one of `id` or `alert` must be set.",
+				MarkdownDescription: docLookupID + " For alert rules, the other option is `alert` (title).",
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.ExactlyOneOf(
@@ -72,10 +72,10 @@ func (d *AlertRuleDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 			"annotations": dataschema.MapAttribute{MarkdownDescription: docAnnotations, ElementType: types.StringType, Computed: true},
 			"spec":        dataschema.StringAttribute{MarkdownDescription: docSpec, Computed: true},
 			"state":       dataschema.StringAttribute{MarkdownDescription: docRuleState, Computed: true},
-			"created_at":  dataschema.StringAttribute{MarkdownDescription: "RFC3339 timestamp from the API.", Computed: true},
-			"updated_at":  dataschema.StringAttribute{MarkdownDescription: "RFC3339 timestamp from the API.", Computed: true},
-			"created_by":  dataschema.StringAttribute{Computed: true},
-			"updated_by":  dataschema.StringAttribute{Computed: true},
+			"created_at":  dataschema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true},
+			"updated_at":  dataschema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},
+			"created_by":  dataschema.StringAttribute{MarkdownDescription: docCreatedBy, Computed: true},
+			"updated_by":  dataschema.StringAttribute{MarkdownDescription: docUpdatedBy, Computed: true},
 		},
 	}
 }

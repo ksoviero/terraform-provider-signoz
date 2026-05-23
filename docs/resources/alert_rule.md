@@ -24,16 +24,16 @@ Manages a SigNoz alert rule (`/api/v2/rules`). Use `spec` for `condition`, `eval
 
 ### Optional
 
-- `annotations` (Map of String) Optional key/value annotations (e.g. `summary`, `description` for notifications). Default: omitted.
-- `description` (String) Optional longer description shown in the SigNoz UI. Default: omitted (empty).
+- `annotations` (Map of String) Optional key/value annotations (e.g. `summary`, `description` for notifications). Default: omitted (no annotations).
+- `description` (String) Optional longer description shown in the SigNoz UI. Default: omitted (empty string).
 - `disabled` (Boolean) When `true`, the rule does not evaluate. Default: `false`.
 - `labels` (Map of String) Optional key/value labels attached to the rule (Prometheus-style). Default: omitted (no labels).
 
 ### Read-Only
 
-- `created_at` (String)
-- `created_by` (String)
-- `id` (String) Rule UUID assigned by SigNoz.
-- `state` (String) Computed evaluation state. Read-only values: `inactive`, `pending`, `recovering`, `firing`, `nodata`, `disabled`.
-- `updated_at` (String)
-- `updated_by` (String)
+- `created_at` (String) RFC3339 timestamp when the object was created. Read-only.
+- `created_by` (String) Identifier of the user or service that created the object. Read-only.
+- `id` (String) SigNoz-assigned UUID. Read-only.
+- `state` (String) Computed evaluation state. Read-only. Valid values: `inactive`, `pending`, `recovering`, `firing`, `nodata`, `disabled`.
+- `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.
+- `updated_by` (String) Identifier of the user or service that last updated the object. Read-only.

@@ -115,7 +115,7 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				},
 			},
 			"id": schema.StringAttribute{
-				MarkdownDescription: "Rule UUID assigned by SigNoz.",
+				MarkdownDescription: docID,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -129,25 +129,29 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				},
 			},
 			"created_at": schema.StringAttribute{
-				Computed: true,
+				MarkdownDescription: docCreatedAt,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"updated_at": schema.StringAttribute{
-				Computed: true,
+				MarkdownDescription: docUpdatedAt,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"created_by": schema.StringAttribute{
-				Computed: true,
+				MarkdownDescription: docCreatedBy,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"updated_by": schema.StringAttribute{
-				Computed: true,
+				MarkdownDescription: docUpdatedBy,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

@@ -13,8 +13,15 @@ Reads a single SigNoz notification channel by `id` or by unique `name`.
 ## Example Usage
 
 ```terraform
-data "signoz_notification_channel" "email" {
-  name = "Email"
+# Lookup by channel name. Exactly one of `id` or `name` is required.
+# Required/optional comments follow provider schema and SigNoz OpenAPI / Alertmanager where applicable.
+
+data "signoz_notification_channel" "slack" {
+  name = "terraform-slack" # required (lookup; exactly one of id or name)
+}
+
+output "notification_channel_type" {
+  value = data.signoz_notification_channel.slack.type # read-only
 }
 ```
 
@@ -23,13 +30,13 @@ data "signoz_notification_channel" "email" {
 
 ### Optional
 
-- `id` (String) Channel UUID. Exactly one of `id` or `name` must be set.
+- `id` (String) Object UUID. Exactly one of `id` or `name` must be set for lookup.
 - `name` (String) Channel name (unique per organization). Used for data source lookup when `id` is not set. Exactly one of `id` or `name` must be set.
 
 ### Read-Only
 
-- `config` (String, Sensitive) JSON receiver configuration. Include one of: `slack_configs`, `email_configs`, `webhook_configs`, `pagerduty_configs`, `opsgenie_configs`, `discord_configs`, `teams_configs`, `sns_configs`, `telegram_configs`, `pushover_configs`, `victorops_configs`, `wechat_configs`, `webex_configs`, `msteams_configs`, `msteamsv2_configs`, `jira_configs`, `rocketchat_configs`, `mattermost_configs`, `incidentio_configs`. The top-level `name` field is set automatically from the resource `name` attribute on create/update.
-- `created_at` (String)
-- `data` (String, Sensitive) Stored receiver JSON from the API.
-- `type` (String) Computed channel type derived from the receiver (e.g. `slack`, `email`, `webhook`).
-- `updated_at` (String)
+- `config` (String, Sensitive) JSON receiver configuration (`AlertmanagertypesPostableChannel`). Include exactly one of: `slack_configs`, `email_configs`, `webhook_configs`, `pagerduty_configs`, `opsgenie_configs`, `discord_configs`, `teams_configs`, `sns_configs`, `telegram_configs`, `pushover_configs`, `victorops_configs`, `wechat_configs`, `webex_configs`, `msteams_configs`, `msteamsv2_configs`, `jira_configs`, `rocketchat_configs`, `mattermost_configs`, `incidentio_configs`. The top-level `name` field is set automatically from the resource `name` attribute on create/update. Sensitive.
+- `created_at` (String) RFC3339 timestamp when the object was created. Read-only.
+- `data` (String, Sensitive) Canonical JSON of the stored receiver object returned by the API. Read-only. Sensitive.
+- `type` (String) Computed channel type derived from the receiver configuration (e.g. `slack`, `email`, `webhook`). Read-only.
+- `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.

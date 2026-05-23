@@ -13,8 +13,15 @@ Reads a single SigNoz dashboard by `id`.
 ## Example Usage
 
 ```terraform
-data "signoz_dashboard" "example" {
-  id = "00000000-0000-0000-0000-000000000000" # replace with a real dashboard UUID
+# Dashboard data source requires `id` (no name lookup).
+# Required/optional comments follow provider schema and SigNoz OpenAPI / Alertmanager where applicable.
+
+data "signoz_dashboard" "service_overview" {
+  id = "00000000-0000-0000-0000-000000000000" # required (Terraform)
+}
+
+output "service_overview_title" {
+  value = jsondecode(data.signoz_dashboard.service_overview.data).title # read-only
 }
 ```
 
@@ -23,14 +30,14 @@ data "signoz_dashboard" "example" {
 
 ### Required
 
-- `id` (String) Dashboard UUID.
+- `id` (String) SigNoz-assigned UUID. Read-only. Required for this data source.
 
 ### Read-Only
 
-- `created_at` (String)
-- `created_by` (String)
-- `data` (String) Dashboard JSON document. Typically includes `title`, `description`, `tags`, `layout`, `widgets`, and `version` (often `v5` for current SigNoz layouts).
+- `created_at` (String) RFC3339 timestamp when the object was created. Read-only.
+- `created_by` (String) Identifier of the user or service that created the object. Read-only.
+- `data` (String) Dashboard JSON document (`PostableDashboard` / `UpdatableDashboard`). Typically includes `title`, `description`, `tags`, `layout`, `widgets`, and `version` (often `v5` for current SigNoz layouts).
 - `locked` (Boolean) Whether the dashboard is locked in the UI. Default: `false`.
-- `source` (String)
-- `updated_at` (String)
-- `updated_by` (String)
+- `source` (String) Dashboard source identifier from the API (e.g. how the dashboard was created). Read-only.
+- `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.
+- `updated_by` (String) Identifier of the user or service that last updated the object. Read-only.

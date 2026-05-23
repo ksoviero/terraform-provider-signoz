@@ -41,10 +41,10 @@ func (d *NotificationChannelDataSource) Metadata(_ context.Context, req datasour
 
 func (d *NotificationChannelDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = dataschema.Schema{
-		MarkdownDescription: "Reads a single SigNoz notification channel by `id` or by unique `name`.",
+		MarkdownDescription: docChannelDataSourceIntro,
 		Attributes: map[string]dataschema.Attribute{
 			"id": dataschema.StringAttribute{
-				MarkdownDescription: "Channel UUID. Exactly one of `id` or `name` must be set.",
+				MarkdownDescription: docLookupID,
 				Optional:            true,
 				Validators: []validator.String{
 					stringvalidator.ExactlyOneOf(
@@ -67,12 +67,12 @@ func (d *NotificationChannelDataSource) Schema(_ context.Context, _ datasource.S
 				Computed:            true,
 			},
 			"data": dataschema.StringAttribute{
-				MarkdownDescription: "Stored receiver JSON from the API.",
+				MarkdownDescription: docChannelData,
 				Computed:            true,
 				Sensitive:           true,
 			},
-			"created_at": dataschema.StringAttribute{Computed: true},
-			"updated_at": dataschema.StringAttribute{Computed: true},
+			"created_at": dataschema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true},
+			"updated_at": dataschema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},
 		},
 	}
 }

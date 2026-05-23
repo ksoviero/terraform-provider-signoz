@@ -36,16 +36,16 @@ func (p *SignozProvider) Schema(_ context.Context, _ provider.SchemaRequest, res
 		MarkdownDescription: "Configure access to a [SigNoz](https://signoz.io) instance via its HTTP API. Authentication uses the `SigNoz-Api-Key` header.",
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
-				MarkdownDescription: "Base URL of the SigNoz instance, e.g. `https://signoz.example.com` (no trailing `/api`). May be set with the `SIGNOZ_ENDPOINT` environment variable.",
+				MarkdownDescription: docProviderEndpoint,
 				Optional:            true,
 			},
 			"api_key": schema.StringAttribute{
-				MarkdownDescription: "SigNoz API key value sent as the `SigNoz-Api-Key` header. May be set with the `SIGNOZ_API_KEY` environment variable.",
+				MarkdownDescription: docProviderAPIKey,
 				Optional:            true,
 				Sensitive:           true,
 			},
 			"insecure": schema.BoolAttribute{
-				MarkdownDescription: "If true, TLS certificate verification is skipped. Use only in lab environments.",
+				MarkdownDescription: docProviderInsecure,
 				Optional:            true,
 			},
 		},
@@ -97,6 +97,13 @@ func (p *SignozProvider) Resources(_ context.Context) []func() resource.Resource
 		NewNotificationChannelResource,
 		NewAlertRuleResource,
 		NewDashboardResource,
+		NewDowntimeScheduleResource,
+		NewRoutePolicyResource,
+		NewAuthDomainResource,
+		NewRoleResource,
+		NewServiceAccountResource,
+		NewSavedViewResource,
+		NewCloudIntegrationAccountResource,
 	}
 }
 
@@ -108,6 +115,20 @@ func (p *SignozProvider) DataSources(_ context.Context) []func() datasource.Data
 		NewNotificationChannelsDataSource,
 		NewDashboardDataSource,
 		NewDashboardsDataSource,
+		NewDowntimeScheduleDataSource,
+		NewDowntimeSchedulesDataSource,
+		NewRoutePolicyDataSource,
+		NewRoutePoliciesDataSource,
+		NewAuthDomainDataSource,
+		NewAuthDomainsDataSource,
+		NewRoleDataSource,
+		NewRolesDataSource,
+		NewServiceAccountDataSource,
+		NewServiceAccountsDataSource,
+		NewSavedViewDataSource,
+		NewSavedViewsDataSource,
+		NewCloudIntegrationAccountDataSource,
+		NewCloudIntegrationAccountsDataSource,
 	}
 }
 

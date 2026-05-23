@@ -17,7 +17,7 @@ Manages a SigNoz dashboard (`/api/v1/dashboards`). `data` is the full dashboard 
 
 ### Required
 
-- `data` (String) Dashboard JSON document. Typically includes `title`, `description`, `tags`, `layout`, `widgets`, and `version` (often `v5` for current SigNoz layouts).
+- `data` (String) Dashboard JSON document (`PostableDashboard` / `UpdatableDashboard`). Typically includes `title`, `description`, `tags`, `layout`, `widgets`, and `version` (often `v5` for current SigNoz layouts).
 
 ### Optional
 
@@ -25,9 +25,9 @@ Manages a SigNoz dashboard (`/api/v1/dashboards`). `data` is the full dashboard 
 
 ### Read-Only
 
-- `created_at` (String)
-- `created_by` (String)
-- `id` (String) The ID of this resource.
-- `source` (String)
-- `updated_at` (String)
-- `updated_by` (String)
+- `created_at` (String) RFC3339 timestamp when the object was created. Read-only.
+- `created_by` (String) Identifier of the user or service that created the object. Read-only.
+- `id` (String) SigNoz-assigned UUID. Read-only.
+- `source` (String) Dashboard source identifier from the API (e.g. how the dashboard was created). Read-only.
+- `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.
+- `updated_by` (String) Identifier of the user or service that last updated the object. Read-only.

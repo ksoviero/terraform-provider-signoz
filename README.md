@@ -16,6 +16,13 @@ See `PLAN.md` for roadmap and `docs/DASHBOARD_API.md` for dashboard endpoints no
 | `signoz_notification_channel` | `/api/v1/channels` |
 | `signoz_alert_rule` | `/api/v2/rules` |
 | `signoz_dashboard` | `/api/v1/dashboards` |
+| `signoz_downtime_schedule` | `/api/v1/downtime_schedules` |
+| `signoz_route_policy` | `/api/v1/route_policies` |
+| `signoz_auth_domain` | `/api/v1/domains` |
+| `signoz_role` | `/api/v1/roles` |
+| `signoz_service_account` | `/api/v1/service_accounts` |
+| `signoz_saved_view` | `/api/v1/explorer/views` |
+| `signoz_cloud_integration_account` | `/api/v1/cloud_integrations/{cloud_provider}/accounts` |
 
 ## Data sources
 
@@ -27,6 +34,20 @@ See `PLAN.md` for roadmap and `docs/DASHBOARD_API.md` for dashboard endpoints no
 | `signoz_notification_channels` | `/api/v1/channels` | Lists all channels |
 | `signoz_dashboard` | `/api/v1/dashboards` | `id` |
 | `signoz_dashboards` | `/api/v1/dashboards` | Lists all dashboards |
+| `signoz_downtime_schedule` | `/api/v1/downtime_schedules` | `id` or unique `name` |
+| `signoz_downtime_schedules` | `/api/v1/downtime_schedules` | Lists all |
+| `signoz_route_policy` | `/api/v1/route_policies` | `id` or unique `name` |
+| `signoz_route_policies` | `/api/v1/route_policies` | Lists all |
+| `signoz_auth_domain` | `/api/v1/domains` | `id` or unique `name` |
+| `signoz_auth_domains` | `/api/v1/domains` | Lists all |
+| `signoz_role` | `/api/v1/roles` | `id` or unique `name` |
+| `signoz_roles` | `/api/v1/roles` | Lists all |
+| `signoz_service_account` | `/api/v1/service_accounts` | `id` or unique `name` |
+| `signoz_service_accounts` | `/api/v1/service_accounts` | Lists all |
+| `signoz_saved_view` | `/api/v1/explorer/views` | `id` or `name` (+ optional filters) |
+| `signoz_saved_views` | `/api/v1/explorer/views` | Lists with optional query filters |
+| `signoz_cloud_integration_account` | cloud accounts | `cloud_provider` + `id` |
+| `signoz_cloud_integration_accounts` | cloud accounts | `cloud_provider` required |
 
 Field defaults and enumerated values: [docs/guides/field_reference.md](docs/guides/field_reference.md).
 
