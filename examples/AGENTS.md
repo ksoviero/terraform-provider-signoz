@@ -41,6 +41,27 @@ It is OK to define a shared dependency when the example’s purpose is to show h
 
 In that case, include the dependency resource in the same `resource.tf` and use `depends_on` when Terraform cannot infer the order. Still **inline** the full JSON for each alert/rule; only the channel name is shared by reference.
 
+### Required / optional field comments (mandatory)
+
+Every example file must document whether each field is **required** or **optional**:
+
+1. **Terraform attributes** on `resource`, `data`, `provider`, and `variable` blocks — suffix or line-above comment using the provider schema:
+   - `# required (Terraform)` — attribute is `Required: true` in `internal/provider/*.go`
+   - `# optional` — attribute is `Optional: true` (state default if any)
+   - `# required (lookup; exactly one of id or name)` — data sources with `ExactlyOneOf` (comment the attribute used in that example; note the alternate key in the file header)
+   - `# read-only` — computed data source attributes (usually only on `output` examples, not set in config)
+
+2. **Keys inside `jsonencode({ ... })`** — comment every key at the level shown in the example. Use:
+   - `# required (Terraform)` / `# optional` when the JSON is stored in a provider attribute that is required/optional
+   - `# required (SigNoz API)` / `# required (Alertmanager)` / `# optional` for inner API fields when OpenAPI or Alertmanager defines behavior (see `notification_channel/`)
+   - For long template strings or heredocs, put `# optional` on the line **above** the assignment (HCL cannot trail-comment `<<-EOT`)
+
+3. **Nested JSON** (alert `spec`, dashboard `widgets`, auth `config`) — at minimum comment each **top-level** key inside `jsonencode` and each **major section** (`condition`, `evaluation`, `samlConfig`, etc.). Deeper keys in the example should be commented when they are present.
+
+4. **File header** — include one line: `# Required/optional comments follow provider schema and SigNoz OpenAPI / Alertmanager where applicable.`
+
+Do not omit comments on “obvious” fields. Prefer `# optional` over leaving fields uncommented.
+
 ### Comments and naming
 
 - Add a **1–3 line file header** when the file covers several variants or non-obvious API concepts (OpenAPI type name, link to generated `docs/resources/*.md`, signal type).
@@ -66,6 +87,7 @@ Examples are not acceptance tests. Do not add `provider` blocks to every resourc
 
 | Avoid | Prefer |
 |-------|--------|
+| Fields without `# required` / `# optional` comments | Every Terraform and JSON key in examples annotated |
 | `locals { shared_spec = ... }` | Repeat full `jsonencode` in each resource |
 | `merge(local.base, { groupBy = [...] })` | Full `notificationSettings` object per resource |
 | `variable` in resource examples for secrets | Inline `"your-api-key"` placeholders |
@@ -89,7 +111,7 @@ Use these as style anchors when adding or extending examples:
 |-----------|----------------------|
 | `resources/alert_rule/` | Multiple signal types; full v2alpha1 `spec`; channel references; no locals |
 | `resources/auth_domain/` | One resource per IdP / auth mode; full `config` and `roleMapping` inlined |
-| `resources/notification_channel/` | Typical `jsonencode` channel config |
+| `resources/notification_channel/` | Slack, email, webhook (bearer/basic auth), PagerDuty, Opsgenie; per-field required/optional comments |
 | `resources/route_policy/` | Expression routing + channel reference |
 | `data-sources/signoz_alert_rule/` | Lookup by `alert` + output |
 

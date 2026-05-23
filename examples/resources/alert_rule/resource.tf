@@ -1,54 +1,55 @@
 # Alert rule examples by signal type. Each `spec` uses schemaVersion v2alpha1 and version v5.
 # Threshold operators and match types: see docs/resources/alert_rule.md (`spec` attribute) and SigNoz OpenAPI rule types.
+# Required/optional comments follow provider schema and SigNoz OpenAPI / Alertmanager where applicable.
 
 resource "signoz_notification_channel" "slack" {
-  name = "terraform-slack"
+  name = "terraform-slack" # required (Terraform)
 
-  config = jsonencode({
-    slack_configs = [{
-      api_url = "https://hooks.slack.com/services/XXX/YYY/ZZZ"
-      channel = "#alerts"
+  config = jsonencode({                                        # required (Terraform)
+    slack_configs = [{                                         # required (exactly one *_configs array)
+      api_url = "https://hooks.slack.com/services/XXX/YYY/ZZZ" # required (Alertmanager)
+      channel = "#alerts"                                      # required (Alertmanager)
     }]
   })
 }
 
 resource "signoz_alert_rule" "metric_cpu" {
-  alert       = "Pod CPU above 80% of request"
-  alert_type  = "METRIC_BASED_ALERT"
-  rule_type   = "threshold_rule"
-  description = "CPU usage for api-service pods exceeds 80% of the requested CPU."
+  alert       = "Pod CPU above 80% of request"                                     # required (Terraform)
+  alert_type  = "METRIC_BASED_ALERT"                                               # required (Terraform)
+  rule_type   = "threshold_rule"                                                   # required (Terraform)
+  description = "CPU usage for api-service pods exceeds 80% of the requested CPU." # optional
 
-  labels = {
+  labels = { # optional
     severity = "warning"
     team     = "platform"
   }
 
-  annotations = {
+  annotations = { # optional
     summary     = "Pod CPU above 80% of request"
     description = "Pod {{$labels.k8s.pod.name}} CPU is high in {{$labels.deployment.environment}}."
   }
 
-  spec = jsonencode({
-    schemaVersion = "v2alpha1"
-    version       = "v5"
-    condition = {
-      compositeQuery = {
-        queryType = "builder"
-        panelType = "graph"
-        unit      = "percentunit"
-        queries = [{
-          type = "builder_query"
-          spec = {
-            name         = "A"
-            signal       = "metrics"
-            stepInterval = 60
-            aggregations = [{
-              metricName       = "k8s.pod.cpu_request_utilization"
-              timeAggregation  = "avg"
-              spaceAggregation = "max"
+  spec = jsonencode({                                              # required (Terraform)
+    schemaVersion = "v2alpha1"                                     # required (SigNoz API)
+    version       = "v5"                                           # required (SigNoz API)
+    condition = {                                                  # required (SigNoz API)
+      compositeQuery = {                                           # required (SigNoz API)
+        queryType = "builder"                                      # required
+        panelType = "graph"                                        # optional
+        unit      = "percentunit"                                  # optional
+        queries = [{                                               # required
+          type = "builder_query"                                   # required
+          spec = {                                                 # required
+            name         = "A"                                     # required
+            signal       = "metrics"                               # required
+            stepInterval = 60                                      # optional
+            aggregations = [{                                      # required
+              metricName       = "k8s.pod.cpu_request_utilization" # required
+              timeAggregation  = "avg"                             # optional
+              spaceAggregation = "max"                             # optional
             }]
-            filter = { expression = "k8s.deployment.name = 'api-service'" }
-            groupBy = [{
+            filter = { expression = "k8s.deployment.name = 'api-service'" } # optional
+            groupBy = [{                                                    # optional
               name          = "k8s.pod.name"
               fieldContext  = "resource"
               fieldDataType = "string"
@@ -56,71 +57,71 @@ resource "signoz_alert_rule" "metric_cpu" {
           }
         }]
       }
-      selectedQueryName = "A"
-      thresholds = {
-        kind = "basic"
-        spec = [{
-          name      = "critical"
-          op        = "above"
-          matchType = "all_the_times"
-          target    = 0.8
-          channels  = [signoz_notification_channel.slack.name]
+      selectedQueryName = "A"                                  # required (SigNoz API)
+      thresholds = {                                           # required (SigNoz API)
+        kind = "basic"                                         # required
+        spec = [{                                              # required
+          name      = "critical"                               # optional
+          op        = "above"                                  # required
+          matchType = "all_the_times"                          # required
+          target    = 0.8                                      # required
+          channels  = [signoz_notification_channel.slack.name] # optional
         }]
       }
     }
-    evaluation = {
-      kind = "rolling"
-      spec = {
-        evalWindow = "5m"
-        frequency  = "1m"
+    evaluation = {        # required (SigNoz API)
+      kind = "rolling"    # required
+      spec = {            # required
+        evalWindow = "5m" # required
+        frequency  = "1m" # required
       }
     }
-    notificationSettings = {
-      renotify = {
-        enabled  = false
-        interval = "30m"
+    notificationSettings = { # optional
+      renotify = {           # optional
+        enabled  = false     # optional
+        interval = "30m"     # optional
       }
-      groupBy = ["k8s.pod.name"]
+      groupBy = ["k8s.pod.name"] # optional
     }
   })
 
-  depends_on = [signoz_notification_channel.slack]
+  depends_on = [signoz_notification_channel.slack] # optional (ordering)
 }
 
 resource "signoz_alert_rule" "logs_panic" {
-  alert       = "Payments service panic logs"
-  alert_type  = "LOGS_BASED_ALERT"
-  rule_type   = "threshold_rule"
-  description = "Any panic log line emitted by the payments service."
+  alert       = "Payments service panic logs"                         # required (Terraform)
+  alert_type  = "LOGS_BASED_ALERT"                                    # required (Terraform)
+  rule_type   = "threshold_rule"                                      # required (Terraform)
+  description = "Any panic log line emitted by the payments service." # optional
 
-  labels = {
+  labels = { # optional
     severity = "critical"
     team     = "payments"
   }
 
-  annotations = {
+  annotations = { # optional
     summary     = "Payments service panic"
     description = "Panic logs detected for service payments-api."
   }
 
-  spec = jsonencode({
-    schemaVersion = "v2alpha1"
-    version       = "v5"
-    condition = {
-      compositeQuery = {
-        queryType = "builder"
-        panelType = "graph"
-        queries = [{
-          type = "builder_query"
-          spec = {
-            name         = "A"
-            signal       = "logs"
-            stepInterval = 60
-            aggregations = [{ expression = "count()" }]
-            filter = {
+  spec = jsonencode({                                   # required (Terraform)
+    schemaVersion = "v2alpha1"                          # required (SigNoz API)
+    version       = "v5"                                # required (SigNoz API)
+    condition = {                                       # required (SigNoz API)
+      compositeQuery = {                                # required (SigNoz API)
+        queryType = "builder"                           # required
+        panelType = "graph"                             # optional
+        queries = [{                                    # required
+          type = "builder_query"                        # required
+          spec = {                                      # required
+            name         = "A"                          # required
+            signal       = "logs"                       # required
+            stepInterval = 60                           # optional
+            aggregations = [{ expression = "count()" }] # required
+            filter = {                                  # optional
               expression = "service.name = 'payments-api' AND severity_text = 'ERROR' AND body CONTAINS 'panic'"
             }
-            groupBy = [{
+            groupBy = [{ # optional
               name          = "k8s.pod.name"
               fieldContext  = "resource"
               fieldDataType = "string"
@@ -128,72 +129,72 @@ resource "signoz_alert_rule" "logs_panic" {
           }
         }]
       }
-      selectedQueryName = "A"
-      thresholds = {
-        kind = "basic"
-        spec = [{
-          name      = "critical"
-          op        = "above"
-          matchType = "at_least_once"
-          target    = 0
-          channels  = [signoz_notification_channel.slack.name]
+      selectedQueryName = "A"                                  # required (SigNoz API)
+      thresholds = {                                           # required (SigNoz API)
+        kind = "basic"                                         # required
+        spec = [{                                              # required
+          name      = "critical"                               # optional
+          op        = "above"                                  # required
+          matchType = "at_least_once"                          # required
+          target    = 0                                        # required
+          channels  = [signoz_notification_channel.slack.name] # optional
         }]
       }
     }
-    evaluation = {
-      kind = "rolling"
-      spec = {
-        evalWindow = "5m"
-        frequency  = "1m"
+    evaluation = {        # required (SigNoz API)
+      kind = "rolling"    # required
+      spec = {            # required
+        evalWindow = "5m" # required
+        frequency  = "1m" # required
       }
     }
-    notificationSettings = {
-      renotify = {
-        enabled  = false
-        interval = "30m"
+    notificationSettings = { # optional
+      renotify = {           # optional
+        enabled  = false     # optional
+        interval = "30m"     # optional
       }
-      groupBy = ["k8s.pod.name"]
+      groupBy = ["k8s.pod.name"] # optional
     }
   })
 
-  depends_on = [signoz_notification_channel.slack]
+  depends_on = [signoz_notification_channel.slack] # optional (ordering)
 }
 
 resource "signoz_alert_rule" "traces_latency" {
-  alert       = "Search API p99 latency above 5s"
-  alert_type  = "TRACES_BASED_ALERT"
-  rule_type   = "threshold_rule"
-  description = "p99 duration of the search endpoint exceeds 5 seconds."
+  alert       = "Search API p99 latency above 5s"                        # required (Terraform)
+  alert_type  = "TRACES_BASED_ALERT"                                     # required (Terraform)
+  rule_type   = "threshold_rule"                                         # required (Terraform)
+  description = "p99 duration of the search endpoint exceeds 5 seconds." # optional
 
-  labels = {
+  labels = { # optional
     severity = "warning"
     team     = "search"
   }
 
-  annotations = {
+  annotations = { # optional
     summary     = "Search-api latency degraded"
     description = "p99 latency for search-api on GET /api/v1/search crossed the threshold."
   }
 
-  spec = jsonencode({
-    schemaVersion = "v2alpha1"
-    version       = "v5"
-    condition = {
-      compositeQuery = {
-        queryType = "builder"
-        panelType = "graph"
-        unit      = "ns"
-        queries = [{
-          type = "builder_query"
-          spec = {
-            name         = "A"
-            signal       = "traces"
-            stepInterval = 60
-            aggregations = [{ expression = "p99(duration_nano)" }]
-            filter = {
+  spec = jsonencode({                                              # required (Terraform)
+    schemaVersion = "v2alpha1"                                     # required (SigNoz API)
+    version       = "v5"                                           # required (SigNoz API)
+    condition = {                                                  # required (SigNoz API)
+      compositeQuery = {                                           # required (SigNoz API)
+        queryType = "builder"                                      # required
+        panelType = "graph"                                        # optional
+        unit      = "ns"                                           # optional
+        queries = [{                                               # required
+          type = "builder_query"                                   # required
+          spec = {                                                 # required
+            name         = "A"                                     # required
+            signal       = "traces"                                # required
+            stepInterval = 60                                      # optional
+            aggregations = [{ expression = "p99(duration_nano)" }] # required
+            filter = {                                             # optional
               expression = "service.name = 'search-api' AND name = 'GET /api/v1/search'"
             }
-            groupBy = [
+            groupBy = [ # optional
               {
                 name          = "service.name"
                 fieldContext  = "resource"
@@ -208,34 +209,34 @@ resource "signoz_alert_rule" "traces_latency" {
           }
         }]
       }
-      selectedQueryName = "A"
-      thresholds = {
-        kind = "basic"
-        spec = [{
-          name       = "warning"
-          op         = "above"
-          matchType  = "at_least_once"
-          target     = 5
-          targetUnit = "s"
-          channels   = [signoz_notification_channel.slack.name]
+      selectedQueryName = "A"                                   # required (SigNoz API)
+      thresholds = {                                            # required (SigNoz API)
+        kind = "basic"                                          # required
+        spec = [{                                               # required
+          name       = "warning"                                # optional
+          op         = "above"                                  # required
+          matchType  = "at_least_once"                          # required
+          target     = 5                                        # required
+          targetUnit = "s"                                      # optional
+          channels   = [signoz_notification_channel.slack.name] # optional
         }]
       }
     }
-    evaluation = {
-      kind = "rolling"
-      spec = {
-        evalWindow = "5m"
-        frequency  = "1m"
+    evaluation = {        # required (SigNoz API)
+      kind = "rolling"    # required
+      spec = {            # required
+        evalWindow = "5m" # required
+        frequency  = "1m" # required
       }
     }
-    notificationSettings = {
-      renotify = {
-        enabled  = false
-        interval = "30m"
+    notificationSettings = { # optional
+      renotify = {           # optional
+        enabled  = false     # optional
+        interval = "30m"     # optional
       }
-      groupBy = ["service.name", "http.route"]
+      groupBy = ["service.name", "http.route"] # optional
     }
   })
 
-  depends_on = [signoz_notification_channel.slack]
+  depends_on = [signoz_notification_channel.slack] # optional (ordering)
 }
