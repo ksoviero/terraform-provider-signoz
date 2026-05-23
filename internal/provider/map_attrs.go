@@ -11,31 +11,8 @@ import (
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
 
-func typesStringFromMap(m map[string]interface{}, key string) types.String {
-	if m == nil {
-		return types.StringNull()
-	}
-	v := client.MapString(m, key)
-	if v == "" {
-		return types.StringNull()
-	}
-	return types.StringValue(v)
-}
-
 func typesStringValueFromMap(m map[string]interface{}, key string) types.String {
 	return types.StringValue(client.MapString(m, key))
-}
-
-func typesBoolFromMap(m map[string]interface{}, key string) types.Bool {
-	return types.BoolValue(client.MapBool(m, key))
-}
-
-func typesCanonicalJSONFromMap(m map[string]interface{}, key string) (types.String, error) {
-	s, err := client.SubMapJSON(m, key)
-	if err != nil {
-		return types.StringNull(), err
-	}
-	return types.StringValue(s), nil
 }
 
 func typesStringListFromMap(ctx context.Context, m map[string]interface{}, key string) (types.List, diag.Diagnostics) {

@@ -269,8 +269,8 @@ func (d *CloudIntegrationAccountDataSource) Schema(_ context.Context, _ datasour
 	resp.Schema = dataschema.Schema{
 		MarkdownDescription: docCloudDataSourceIntro,
 		Attributes: map[string]dataschema.Attribute{
-			"cloud_provider": dataschema.StringAttribute{MarkdownDescription: docCloudProvider, Required: true},
-			"id":             dataschema.StringAttribute{MarkdownDescription: docID + " Required together with `cloud_provider`.", Required: true},
+			"cloud_provider":      dataschema.StringAttribute{MarkdownDescription: docCloudProvider, Required: true},
+			"id":                  dataschema.StringAttribute{MarkdownDescription: docID + " Required together with `cloud_provider`.", Required: true},
 			"config":              dataschema.StringAttribute{MarkdownDescription: docCloudConfig, Computed: true},
 			"account_provider":    dataschema.StringAttribute{MarkdownDescription: docCloudAccountProvider, Computed: true},
 			"provider_account_id": dataschema.StringAttribute{MarkdownDescription: docCloudProviderAccountID, Computed: true},

@@ -8,9 +8,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -48,8 +48,8 @@ func routePolicyAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"id": types.StringType, "name": types.StringType, "description": types.StringType,
 		"expression": types.StringType, "kind": types.StringType,
-		"channels": types.ListType{ElemType: types.StringType},
-		"tags":     types.ListType{ElemType: types.StringType},
+		"channels":   types.ListType{ElemType: types.StringType},
+		"tags":       types.ListType{ElemType: types.StringType},
 		"created_at": types.StringType, "updated_at": types.StringType,
 		"created_by": types.StringType, "updated_by": types.StringType,
 	}

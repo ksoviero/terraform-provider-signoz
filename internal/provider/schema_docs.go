@@ -9,18 +9,18 @@ const (
 	// Provider
 	docProviderEndpoint = "Base URL of the SigNoz instance (scheme + host), e.g. `https://signoz.example.com`. Do not include `/api`. " +
 		"Default: read from `SIGNOZ_ENDPOINT` when this attribute is omitted."
-	docProviderAPIKey = "API key sent as the `SigNoz-Api-Key` header. Default: read from `SIGNOZ_API_KEY` when this attribute is omitted. Sensitive."
+	docProviderAPIKey   = "API key sent as the `SigNoz-Api-Key` header. Default: read from `SIGNOZ_API_KEY` when this attribute is omitted. Sensitive."
 	docProviderInsecure = "When `true`, TLS certificate verification is disabled. Default: `false`. Use only in lab environments."
 
 	// Common read-only / lookup
-	docID = "SigNoz-assigned UUID. Read-only."
+	docID        = "SigNoz-assigned UUID. Read-only."
 	docCreatedAt = "RFC3339 timestamp when the object was created. Read-only."
 	docUpdatedAt = "RFC3339 timestamp when the object was last updated. Read-only."
 	docCreatedBy = "Identifier of the user or service that created the object. Read-only."
 	docUpdatedBy = "Identifier of the user or service that last updated the object. Read-only."
 	docOrgID     = "Organization UUID. Read-only."
 
-	docLookupID = "Object UUID. Exactly one of `id` or `name` must be set for lookup."
+	docLookupID   = "Object UUID. Exactly one of `id` or `name` must be set for lookup."
 	docLookupName = "Object name (unique within the organization for that resource type). Exactly one of `id` or `name` must be set for lookup."
 
 	docListAllIntro = "Lists all objects returned by the list API endpoint for this resource type."
