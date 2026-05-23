@@ -6,6 +6,8 @@ terraform.tfplan
 terraform.tfstate
 bin/
 dist/
+terraform-provider-signoz
+terraform-provider-signoz_*
 .terraform/
 *.log
 .idea
