@@ -75,7 +75,7 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 			"data": schema.StringAttribute{
 				MarkdownDescription: "Stored receiver JSON from the API.",
 				Computed:            true,
-				Sensitive:             true,
+				Sensitive:           true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

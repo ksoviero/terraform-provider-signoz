@@ -111,21 +111,6 @@ func (d *AlertRuleDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	state := alertRuleDataSourceModel{
-		ID:          rule.ID,
-		Alert:       rule.Alert,
-		AlertType:   rule.AlertType,
-		RuleType:    rule.RuleType,
-		Description: rule.Description,
-		Disabled:    rule.Disabled,
-		Labels:      rule.Labels,
-		Annotations: rule.Annotations,
-		Spec:        rule.Spec,
-		State:       rule.State,
-		CreatedAt:   rule.CreatedAt,
-		UpdatedAt:   rule.UpdatedAt,
-		CreatedBy:   rule.CreatedBy,
-		UpdatedBy:   rule.UpdatedBy,
-	}
+	state := alertRuleDataSourceModel(rule)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }

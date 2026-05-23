@@ -13,8 +13,12 @@ import (
 
 var (
 	version = "dev"
-	commit  = ""
+	commit  = "" // set via -ldflags at release (GoReleaser)
 )
+
+func init() {
+	_ = commit
+}
 
 func main() {
 	var debug bool

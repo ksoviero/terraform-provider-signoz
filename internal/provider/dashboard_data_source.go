@@ -87,15 +87,6 @@ func (d *DashboardDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	out := dashboardDataSourceModel{
-		ID:        state.ID,
-		Data:      state.Data,
-		Locked:    state.Locked,
-		Source:    state.Source,
-		CreatedAt: state.CreatedAt,
-		UpdatedAt: state.UpdatedAt,
-		CreatedBy: state.CreatedBy,
-		UpdatedBy: state.UpdatedBy,
-	}
+	out := dashboardDataSourceModel(state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }

@@ -122,22 +122,7 @@ func (d *AlertRulesDataSource) Read(ctx context.Context, req datasource.ReadRequ
 
 	elems := make([]attr.Value, 0, len(rules))
 	for _, r := range rules {
-		obj, diags := types.ObjectValueFrom(ctx, alertRuleListAttrTypes(), alertRuleListElementModel{
-			ID:          r.ID,
-			Alert:       r.Alert,
-			AlertType:   r.AlertType,
-			RuleType:    r.RuleType,
-			Description: r.Description,
-			Disabled:    r.Disabled,
-			Labels:      r.Labels,
-			Annotations: r.Annotations,
-			Spec:        r.Spec,
-			State:       r.State,
-			CreatedAt:   r.CreatedAt,
-			UpdatedAt:   r.UpdatedAt,
-			CreatedBy:   r.CreatedBy,
-			UpdatedBy:   r.UpdatedBy,
-		})
+		obj, diags := types.ObjectValueFrom(ctx, alertRuleListAttrTypes(), alertRuleListElementModel(r))
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return

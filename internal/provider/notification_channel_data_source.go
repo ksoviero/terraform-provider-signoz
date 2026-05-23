@@ -57,9 +57,20 @@ func (d *NotificationChannelDataSource) Schema(_ context.Context, _ datasource.S
 				MarkdownDescription: docChannelName + " Exactly one of `id` or `name` must be set.",
 				Optional:            true,
 			},
-			"config":    dataschema.StringAttribute{MarkdownDescription: docChannelConfig, Computed: true, Sensitive: true},
-			"type":      dataschema.StringAttribute{MarkdownDescription: docChannelType, Computed: true},
-			"data":      dataschema.StringAttribute{MarkdownDescription: "Stored receiver JSON from the API.", Computed: true, Sensitive: true},
+			"config": dataschema.StringAttribute{
+				MarkdownDescription: docChannelConfig,
+				Computed:            true,
+				Sensitive:           true,
+			},
+			"type": dataschema.StringAttribute{
+				MarkdownDescription: docChannelType,
+				Computed:            true,
+			},
+			"data": dataschema.StringAttribute{
+				MarkdownDescription: "Stored receiver JSON from the API.",
+				Computed:            true,
+				Sensitive:           true,
+			},
 			"created_at": dataschema.StringAttribute{Computed: true},
 			"updated_at": dataschema.StringAttribute{Computed: true},
 		},
@@ -124,14 +135,6 @@ func (d *NotificationChannelDataSource) Read(ctx context.Context, req datasource
 		return
 	}
 
-	out := notificationChannelDataSourceModel{
-		ID:        state.ID,
-		Name:      state.Name,
-		Config:    state.Config,
-		Type:      state.Type,
-		Data:      state.Data,
-		CreatedAt: state.CreatedAt,
-		UpdatedAt: state.UpdatedAt,
-	}
+	out := notificationChannelDataSourceModel(state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }

@@ -98,7 +98,7 @@ func (c *Client) DoJSON(ctx context.Context, method, path string, reqBody any, d
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -159,7 +159,7 @@ func (c *Client) DoJSONRaw(ctx context.Context, method, path string, rawBody []b
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
