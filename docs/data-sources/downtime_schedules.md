@@ -13,10 +13,12 @@ Lists all objects returned by the list API endpoint for this resource type. (`GE
 ## Example Usage
 
 ```terraform
-data "signoz_downtime_schedules" "all" {}
+# Required/optional comments follow provider schema and SigNoz OpenAPI / Alertmanager where applicable.
+
+data "signoz_downtime_schedules" "all" {} # no arguments
 
 output "downtime_schedule_count" {
-  value = length(data.signoz_downtime_schedules.all.schedules)
+  value = length(data.signoz_downtime_schedules.all.schedules) # read-only
 }
 ```
 

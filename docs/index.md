@@ -18,22 +18,24 @@ Highlights include multi-signal alert rules (metrics, logs, traces), SAML/OIDC/G
 ## Example Usage
 
 ```terraform
+# Provider bootstrap for examples. Required/optional comments follow the provider schema.
+
 terraform {
   required_providers {
     signoz = {
-      source = "ksoviero/signoz"
+      source = "ksoviero/signoz" # required (terraform block)
     }
   }
 }
 
 provider "signoz" {
-  endpoint = "https://signoz.example.com"
-  api_key  = var.signoz_api_key
+  endpoint = "https://signoz.example.com" # optional (env: SIGNOZ_ENDPOINT)
+  api_key  = var.signoz_api_key           # optional (env: SIGNOZ_API_KEY)
 }
 
 variable "signoz_api_key" {
-  type      = string
-  sensitive = true
+  type      = string # required (variable)
+  sensitive = true   # optional (variable attribute)
 }
 ```
 

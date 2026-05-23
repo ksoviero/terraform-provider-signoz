@@ -3,7 +3,7 @@
 
 data "signoz_saved_view" "error_logs" {
   name        = "terraform-error-logs" # required (lookup; exactly one of id or name)
-  source_page = "logs" # optional (filter when looking up by name)
+  source_page = "logs"                 # optional (filter when looking up by name)
 }
 
 output "saved_view_id" {

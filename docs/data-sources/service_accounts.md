@@ -13,10 +13,12 @@ Lists all objects returned by the list API endpoint for this resource type. (`GE
 ## Example Usage
 
 ```terraform
-data "signoz_service_accounts" "all" {}
+# Required/optional comments follow provider schema and SigNoz OpenAPI / Alertmanager where applicable.
+
+data "signoz_service_accounts" "all" {} # no arguments
 
 output "service_account_count" {
-  value = length(data.signoz_service_accounts.all.accounts)
+  value = length(data.signoz_service_accounts.all.accounts) # read-only
 }
 ```
 

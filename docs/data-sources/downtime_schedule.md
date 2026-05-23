@@ -13,12 +13,15 @@ Reads a single downtime schedule by `id` or by unique `name`.
 ## Example Usage
 
 ```terraform
+# Lookup by schedule name. Exactly one of `id` or `name` is required.
+# Required/optional comments follow provider schema and SigNoz OpenAPI / Alertmanager where applicable.
+
 data "signoz_downtime_schedule" "weekend" {
-  name = "terraform-weekend-maintenance"
+  name = "terraform-weekend-maintenance" # required (lookup; exactly one of id or name)
 }
 
 output "downtime_schedule_id" {
-  value = data.signoz_downtime_schedule.weekend.id
+  value = data.signoz_downtime_schedule.weekend.id # read-only
 }
 ```
 
