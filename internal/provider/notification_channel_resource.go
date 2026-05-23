@@ -59,7 +59,7 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 				},
 			},
 			"id": schema.StringAttribute{
-				MarkdownDescription: "Channel UUID assigned by SigNoz.",
+				MarkdownDescription: docID,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
@@ -73,7 +73,7 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 				},
 			},
 			"data": schema.StringAttribute{
-				MarkdownDescription: "Stored receiver JSON from the API.",
+				MarkdownDescription: docChannelData,
 				Computed:            true,
 				Sensitive:           true,
 				PlanModifiers: []planmodifier.String{
@@ -81,13 +81,15 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 				},
 			},
 			"created_at": schema.StringAttribute{
-				Computed: true,
+				MarkdownDescription: docCreatedAt,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"updated_at": schema.StringAttribute{
-				Computed: true,
+				MarkdownDescription: docUpdatedAt,
+				Computed:            true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},

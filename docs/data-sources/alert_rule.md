@@ -28,19 +28,19 @@ output "failed_pods_id" {
 ### Optional
 
 - `alert` (String) Human-readable alert rule title. Must be unique enough to identify the rule when using a data source lookup by `alert`. Exactly one of `id` or `alert` must be set.
-- `id` (String) Rule UUID. Exactly one of `id` or `alert` must be set.
+- `id` (String) Object UUID. Exactly one of `id` or `name` must be set for lookup. For alert rules, the other option is `alert` (title).
 
 ### Read-Only
 
 - `alert_type` (String) Alert signal category. Valid values: `METRIC_BASED_ALERT`, `TRACES_BASED_ALERT`, `LOGS_BASED_ALERT`, `EXCEPTIONS_BASED_ALERT`.
-- `annotations` (Map of String) Optional key/value annotations (e.g. `summary`, `description` for notifications). Default: omitted.
-- `created_at` (String) RFC3339 timestamp from the API.
-- `created_by` (String)
-- `description` (String) Optional longer description shown in the SigNoz UI. Default: omitted (empty).
+- `annotations` (Map of String) Optional key/value annotations (e.g. `summary`, `description` for notifications). Default: omitted (no annotations).
+- `created_at` (String) RFC3339 timestamp when the object was created. Read-only.
+- `created_by` (String) Identifier of the user or service that created the object. Read-only.
+- `description` (String) Optional longer description shown in the SigNoz UI. Default: omitted (empty string).
 - `disabled` (Boolean) When `true`, the rule does not evaluate. Default: `false`.
 - `labels` (Map of String) Optional key/value labels attached to the rule (Prometheus-style). Default: omitted (no labels).
 - `rule_type` (String) Evaluation engine for the rule. Valid values: `threshold_rule`, `promql_rule`, `anomaly_rule` (anomaly rules may require UI-only fields; prefer `threshold_rule` or `promql_rule` for Terraform).
 - `spec` (String) JSON object with rule body fields: `condition`, `evaluation`, `notificationSettings`, `schemaVersion`, `version`, `source`, etc. Common `spec` values: `schemaVersion` = `v2alpha1`, `version` = `v5`. Inside `condition.thresholds.spec[]`, `op` may be `above`, `below`, `equal`, `not_equal`, `outside_bounds` (API also accepts legacy numeric codes from the UI). `matchType`: `at_least_once`, `all_the_times`, `on_average`, `in_total`, `last`. `evaluation.kind`: `rolling` or `cumulative`.
-- `state` (String) Computed evaluation state. Read-only values: `inactive`, `pending`, `recovering`, `firing`, `nodata`, `disabled`.
-- `updated_at` (String) RFC3339 timestamp from the API.
-- `updated_by` (String)
+- `state` (String) Computed evaluation state. Read-only. Valid values: `inactive`, `pending`, `recovering`, `firing`, `nodata`, `disabled`.
+- `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.
+- `updated_by` (String) Identifier of the user or service that last updated the object. Read-only.

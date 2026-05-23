@@ -45,21 +45,13 @@ func (d *NotificationChannelsDataSource) Metadata(_ context.Context, req datasou
 
 func (d *NotificationChannelsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = dataschema.Schema{
-		MarkdownDescription: "Lists all SigNoz notification channels (`GET /api/v1/channels`).",
+		MarkdownDescription: docListAllIntro + " (`GET /api/v1/channels`).",
 		Attributes: map[string]dataschema.Attribute{
 			"channels": dataschema.ListNestedAttribute{
-				MarkdownDescription: "Notification channels in the organization.",
+				MarkdownDescription: "Notification channels in the organization. Read-only.",
 				Computed:            true,
 				NestedObject: dataschema.NestedAttributeObject{
-					Attributes: map[string]dataschema.Attribute{
-						"id":         dataschema.StringAttribute{Computed: true},
-						"name":       dataschema.StringAttribute{MarkdownDescription: docChannelName, Computed: true},
-						"config":     dataschema.StringAttribute{MarkdownDescription: docChannelConfig, Computed: true, Sensitive: true},
-						"type":       dataschema.StringAttribute{MarkdownDescription: docChannelType, Computed: true},
-						"data":       dataschema.StringAttribute{Computed: true, Sensitive: true},
-						"created_at": dataschema.StringAttribute{Computed: true},
-						"updated_at": dataschema.StringAttribute{Computed: true},
-					},
+					Attributes: notificationChannelNestedDataSourceAttrs(),
 				},
 			},
 		},

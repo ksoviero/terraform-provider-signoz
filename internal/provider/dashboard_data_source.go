@@ -39,19 +39,19 @@ func (d *DashboardDataSource) Metadata(_ context.Context, req datasource.Metadat
 
 func (d *DashboardDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = dataschema.Schema{
-		MarkdownDescription: "Reads a single SigNoz dashboard by `id`.",
+		MarkdownDescription: docDashboardDataSourceIntro,
 		Attributes: map[string]dataschema.Attribute{
 			"id": dataschema.StringAttribute{
-				MarkdownDescription: "Dashboard UUID.",
+				MarkdownDescription: docID + " Required for this data source.",
 				Required:            true,
 			},
 			"data":       dataschema.StringAttribute{MarkdownDescription: docDashboardData, Computed: true},
 			"locked":     dataschema.BoolAttribute{MarkdownDescription: docDashboardLocked, Computed: true},
-			"source":     dataschema.StringAttribute{Computed: true},
-			"created_at": dataschema.StringAttribute{Computed: true},
-			"updated_at": dataschema.StringAttribute{Computed: true},
-			"created_by": dataschema.StringAttribute{Computed: true},
-			"updated_by": dataschema.StringAttribute{Computed: true},
+			"source":     dataschema.StringAttribute{MarkdownDescription: docDashboardSource, Computed: true},
+			"created_at": dataschema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true},
+			"updated_at": dataschema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},
+			"created_by": dataschema.StringAttribute{MarkdownDescription: docCreatedBy, Computed: true},
+			"updated_by": dataschema.StringAttribute{MarkdownDescription: docUpdatedBy, Computed: true},
 		},
 	}
 }

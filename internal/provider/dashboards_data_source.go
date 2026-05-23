@@ -46,22 +46,13 @@ func (d *DashboardsDataSource) Metadata(_ context.Context, req datasource.Metada
 
 func (d *DashboardsDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = dataschema.Schema{
-		MarkdownDescription: "Lists all SigNoz dashboards (`GET /api/v1/dashboards`).",
+		MarkdownDescription: docListAllIntro + " (`GET /api/v1/dashboards`).",
 		Attributes: map[string]dataschema.Attribute{
 			"dashboards": dataschema.ListNestedAttribute{
-				MarkdownDescription: "Dashboards in the organization.",
+				MarkdownDescription: "Dashboards in the organization. Read-only.",
 				Computed:            true,
 				NestedObject: dataschema.NestedAttributeObject{
-					Attributes: map[string]dataschema.Attribute{
-						"id":         dataschema.StringAttribute{Computed: true},
-						"data":       dataschema.StringAttribute{MarkdownDescription: docDashboardData, Computed: true},
-						"locked":     dataschema.BoolAttribute{MarkdownDescription: docDashboardLocked, Computed: true},
-						"source":     dataschema.StringAttribute{Computed: true},
-						"created_at": dataschema.StringAttribute{Computed: true},
-						"updated_at": dataschema.StringAttribute{Computed: true},
-						"created_by": dataschema.StringAttribute{Computed: true},
-						"updated_by": dataschema.StringAttribute{Computed: true},
-					},
+					Attributes: dashboardNestedDataSourceAttrs(),
 				},
 			},
 		},

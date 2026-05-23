@@ -17,13 +17,13 @@ Manages a SigNoz notification channel (`/api/v1/channels`). `config` is a JSON r
 
 ### Required
 
-- `config` (String, Sensitive) JSON receiver configuration. Include one of: `slack_configs`, `email_configs`, `webhook_configs`, `pagerduty_configs`, `opsgenie_configs`, `discord_configs`, `teams_configs`, `sns_configs`, `telegram_configs`, `pushover_configs`, `victorops_configs`, `wechat_configs`, `webex_configs`, `msteams_configs`, `msteamsv2_configs`, `jira_configs`, `rocketchat_configs`, `mattermost_configs`, `incidentio_configs`. The top-level `name` field is set automatically from the resource `name` attribute on create/update.
+- `config` (String, Sensitive) JSON receiver configuration (`AlertmanagertypesPostableChannel`). Include exactly one of: `slack_configs`, `email_configs`, `webhook_configs`, `pagerduty_configs`, `opsgenie_configs`, `discord_configs`, `teams_configs`, `sns_configs`, `telegram_configs`, `pushover_configs`, `victorops_configs`, `wechat_configs`, `webex_configs`, `msteams_configs`, `msteamsv2_configs`, `jira_configs`, `rocketchat_configs`, `mattermost_configs`, `incidentio_configs`. The top-level `name` field is set automatically from the resource `name` attribute on create/update. Sensitive.
 - `name` (String) Channel name (unique per organization). Used for data source lookup when `id` is not set.
 
 ### Read-Only
 
-- `created_at` (String)
-- `data` (String, Sensitive) Stored receiver JSON from the API.
-- `id` (String) Channel UUID assigned by SigNoz.
-- `type` (String) Computed channel type derived from the receiver (e.g. `slack`, `email`, `webhook`).
-- `updated_at` (String)
+- `created_at` (String) RFC3339 timestamp when the object was created. Read-only.
+- `data` (String, Sensitive) Canonical JSON of the stored receiver object returned by the API. Read-only. Sensitive.
+- `id` (String) SigNoz-assigned UUID. Read-only.
+- `type` (String) Computed channel type derived from the receiver configuration (e.g. `slack`, `email`, `webhook`). Read-only.
+- `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.

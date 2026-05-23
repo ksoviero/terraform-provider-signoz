@@ -69,28 +69,13 @@ func (d *AlertRulesDataSource) Metadata(_ context.Context, req datasource.Metada
 
 func (d *AlertRulesDataSource) Schema(_ context.Context, _ datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = dataschema.Schema{
-		MarkdownDescription: "Lists all SigNoz alert rules (`GET /api/v2/rules`).",
+		MarkdownDescription: docListAllIntro + " (`GET /api/v2/rules`).",
 		Attributes: map[string]dataschema.Attribute{
 			"rules": dataschema.ListNestedAttribute{
-				MarkdownDescription: "Alert rules in the organization.",
+				MarkdownDescription: "Alert rules in the organization. Read-only.",
 				Computed:            true,
 				NestedObject: dataschema.NestedAttributeObject{
-					Attributes: map[string]dataschema.Attribute{
-						"id":          dataschema.StringAttribute{MarkdownDescription: "Rule UUID.", Computed: true},
-						"alert":       dataschema.StringAttribute{MarkdownDescription: docAlert, Computed: true},
-						"alert_type":  dataschema.StringAttribute{MarkdownDescription: docAlertType, Computed: true},
-						"rule_type":   dataschema.StringAttribute{MarkdownDescription: docRuleType, Computed: true},
-						"description": dataschema.StringAttribute{MarkdownDescription: docDescription, Computed: true},
-						"disabled":    dataschema.BoolAttribute{MarkdownDescription: docDisabled, Computed: true},
-						"labels":      dataschema.MapAttribute{MarkdownDescription: docLabels, ElementType: types.StringType, Computed: true},
-						"annotations": dataschema.MapAttribute{MarkdownDescription: docAnnotations, ElementType: types.StringType, Computed: true},
-						"spec":        dataschema.StringAttribute{MarkdownDescription: docSpec, Computed: true},
-						"state":       dataschema.StringAttribute{MarkdownDescription: docRuleState, Computed: true},
-						"created_at":  dataschema.StringAttribute{Computed: true},
-						"updated_at":  dataschema.StringAttribute{Computed: true},
-						"created_by":  dataschema.StringAttribute{Computed: true},
-						"updated_by":  dataschema.StringAttribute{Computed: true},
-					},
+					Attributes: alertRuleNestedDataSourceAttrs(),
 				},
 			},
 		},
