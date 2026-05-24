@@ -19,9 +19,15 @@ else
   COMPARE_URL=""
 fi
 
+# Optional Conventional Commits scope: fix(ci): msg -> fix: msg
+normalize_subject() {
+  printf '%s' "$1" | sed -E 's/^([a-z][a-z0-9_-]*)\([^)]+\):/\1:/'
+}
+
 # Classify commit subject (same prefixes as compute-next-version.sh / AGENTS.md).
 commit_group() {
-  local subject="$1"
+  local subject
+  subject="$(normalize_subject "$1")"
   local lower="${subject,,}"
   if [[ "$lower" =~ ^merge[[:space:]] ]]; then
     echo "skip"
