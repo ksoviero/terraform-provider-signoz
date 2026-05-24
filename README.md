@@ -135,7 +135,7 @@ Follow [HashiCorp’s publishing guide](https://developer.hashicorp.com/terrafor
 3. **Docs:** `docs/index.md` and `docs/resources/*.md` from `make generate`.
 4. **GPG key:** RSA or DSA signing key; add the public key under Registry **Signing Keys**.
 5. **GitHub secrets:** `GPG_PRIVATE_KEY`, `PASSPHRASE`, and `GPG_FINGERPRINT` for GoReleaser (see `.github/workflows/release.yml`).
-6. **Release:** push tag `v0.1.0` (semver with `v` prefix). GoReleaser produces signed zips and checksums.
+6. **Release:** merge to `main` with a commit subject prefixed by `feat:`, `patch:`, `bug:`, `major:`, etc. (see [AGENTS.md](AGENTS.md)). CI creates the next `v*` tag; GoReleaser produces signed zips and checksums. You can still push a `v*` tag manually if needed.
 7. **Registry:** sign in with GitHub → **Publish** → **Provider** → `ksoviero/terraform-provider-signoz`.
 
 Do not replace assets on an already-published release version; publish a new tag instead.

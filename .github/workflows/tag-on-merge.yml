@@ -1,0 +1,54 @@
+# Create a semver tag when commits land on the default branch, using commit-prefix
+# rules in AGENTS.md. Pushing the tag triggers release.yml (GoReleaser).
+name: Tag on merge
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    name: Compute and push version tag
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Compute next version
+        id: version
+        run: |
+          set -euo pipefail
+          result="$(bash .github/scripts/compute-next-version.sh)"
+          if echo "$result" | grep -q '^skip='; then
+            echo "$result" | grep '^skip=' | sed 's/^skip=//'
+            echo "should_tag=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$result"
+          next="$(echo "$result" | awk -F= '/^next=/ { print $2 }')"
+          bump="$(echo "$result" | awk -F= '/^bump=/ { print $2 }')"
+          echo "tag=${next}" >> "$GITHUB_OUTPUT"
+          echo "bump=${bump}" >> "$GITHUB_OUTPUT"
+          echo "should_tag=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create and push tag
+        if: steps.version.outputs.should_tag == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists; skipping."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG (${{ steps.version.outputs.bump }} bump)"
+          git push origin "$TAG"

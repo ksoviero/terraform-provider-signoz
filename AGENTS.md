@@ -99,6 +99,52 @@ Local Terraform dev: `dev_overrides` for `registry.terraform.io/ksoviero/signoz`
 - Provider tests: `internal/provider/provider_test.go` and resource-specific tests as needed
 - After schema changes, `make generate` must succeed (provider schema must load in Terraform)
 
-## Publishing (human-driven)
+## Commit messages and releases
 
-Tagged releases (`v*`) via GoReleaser; Registry manifest `terraform-registry-manifest.json`. Do not replace assets on an already-published version—ship a new tag.
+Every commit on the default branch (`main`) should use a **release prefix** at the start of the subject line (case-insensitive). The [Tag on merge](.github/workflows/tag-on-merge.yml) workflow scans commits since the latest `v*` tag and picks the **highest** semver bump, then pushes `vMAJOR.MINOR.PATCH`. That tag triggers [GoReleaser](.github/workflows/release.yml) for Registry artifacts.
+
+### Required format
+
+```text
+<prefix>: <short description>
+```
+
+Examples:
+
+```text
+feat: add signoz_route_policy data source
+patch: correct alert rule spec JSON canonicalization
+bug: handle empty channel list on read
+major: remove deprecated alert_rule fields
+```
+
+### Prefix → version bump
+
+| Prefix | Semver bump | Notes |
+|--------|-------------|--------|
+| `major:` | **Major** (X.0.0) | Breaking changes |
+| `minor:` | **Minor** (0.X.0) | New capability without breaking callers |
+| `feat:` | **Minor** (0.X.0) | Same as `minor:` (feature work) |
+| `patch:` | **Patch** (0.0.X) | Bugfixes, small safe changes |
+| `bug:` | **Patch** (0.0.X) | Same as `patch:` |
+| `fix:` | **Patch** (0.0.X) | Alias for `bug:` |
+
+### No release (no new tag)
+
+These prefixes are allowed but **do not** contribute to a version bump. If **only** these appear since the last tag, the tag workflow skips:
+
+`chore:`, `docs:`, `test:`, `ci:`, `refactor:`, `style:`, `build:`, `skip:`
+
+Merge commits (`Merge pull request …`) are ignored; the workflow uses each merged commit in the range.
+
+### Rules for agents and contributors
+
+1. **Always** start the subject with one of the release prefixes above when the change should ship to the Registry.
+2. Use the **highest** applicable prefix in a PR (one breaking change → `major:` for the squash/merge commit).
+3. Prefer **squash merge** subjects that include the prefix (e.g. `feat: add saved view resource`), not bare sentences like `Add saved view resource`.
+4. Do not tag manually for routine releases; merging to `main` creates the tag. Manual `v*` tags are only for exceptional recovery.
+5. Multiple commits since the last tag: the workflow takes the **maximum** bump (`major` > `minor` > `patch`).
+
+### Publishing
+
+Registry releases are driven by `v*` tags (auto-created on merge or pushed manually). Manifest: `terraform-registry-manifest.json`. Do not replace assets on an already-published version—ship a new tag.
