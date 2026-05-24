@@ -115,19 +115,15 @@ func modelFromChannel(ch *client.Channel) (notificationChannelModel, error) {
 }
 
 // notificationChannelStateAfterWrite builds state from the API but keeps the planned
-// config value. SigNoz may canonicalize or mutate receiver JSON on readback; storing
-// the planned config avoids sensitive-attribute apply inconsistencies.
+// config value unchanged. SigNoz may canonicalize or mutate receiver JSON on readback;
+// re-normalizing plan config here breaks Terraform sensitive-attribute apply checks.
 func notificationChannelStateAfterWrite(plan notificationChannelModel, ch *client.Channel) (notificationChannelModel, error) {
 	out, err := modelFromChannel(ch)
 	if err != nil {
 		return notificationChannelModel{}, err
 	}
 	if !plan.Config.IsNull() && !plan.Config.IsUnknown() {
-		normalized, err := client.NormalizeChannelConfigJSON(plan.Config.ValueString())
-		if err != nil {
-			return notificationChannelModel{}, err
-		}
-		out.Config = newNormalizedJSON(normalized)
+		out.Config = plan.Config
 	}
 	return out, nil
 }
