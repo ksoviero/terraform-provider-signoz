@@ -5,6 +5,7 @@ package provider
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -12,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,15 +32,15 @@ func NewCloudIntegrationAccountResource() resource.Resource {
 type CloudIntegrationAccountResource struct{ client *client.Client }
 
 type cloudIntegrationAccountModel struct {
-	ID                types.String `tfsdk:"id"`
-	CloudProvider     types.String `tfsdk:"cloud_provider"`
+	ID                types.String         `tfsdk:"id"`
+	CloudProvider     types.String         `tfsdk:"cloud_provider"`
 	Config            jsontypes.Normalized `tfsdk:"config"`
 	Credentials       jsontypes.Normalized `tfsdk:"credentials"`
-	AccountProvider   types.String `tfsdk:"account_provider"`
-	ProviderAccountID types.String `tfsdk:"provider_account_id"`
-	OrgID             types.String `tfsdk:"org_id"`
-	CreatedAt         types.String `tfsdk:"created_at"`
-	UpdatedAt         types.String `tfsdk:"updated_at"`
+	AccountProvider   types.String         `tfsdk:"account_provider"`
+	ProviderAccountID types.String         `tfsdk:"provider_account_id"`
+	OrgID             types.String         `tfsdk:"org_id"`
+	CreatedAt         types.String         `tfsdk:"created_at"`
+	UpdatedAt         types.String         `tfsdk:"updated_at"`
 }
 
 func cloudIntegrationAccountAttrTypes() map[string]attr.Type {
@@ -88,7 +88,7 @@ func (r *CloudIntegrationAccountResource) Schema(_ context.Context, _ resource.S
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"config": normalizedJSONAttribute(docCloudConfig, true),
+			"config":      normalizedJSONAttribute(docCloudConfig, true),
 			"credentials": normalizedJSONOptionalWithUnknown(docCloudCredentials, true),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,

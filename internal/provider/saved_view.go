@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -14,7 +15,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,17 +32,17 @@ func NewSavedViewResource() resource.Resource { return &SavedViewResource{} }
 type SavedViewResource struct{ client *client.Client }
 
 type savedViewModel struct {
-	ID             types.String `tfsdk:"id"`
-	Name           types.String `tfsdk:"name"`
-	SourcePage     types.String `tfsdk:"source_page"`
-	Category       types.String `tfsdk:"category"`
-	Tags           types.List   `tfsdk:"tags"`
+	ID             types.String         `tfsdk:"id"`
+	Name           types.String         `tfsdk:"name"`
+	SourcePage     types.String         `tfsdk:"source_page"`
+	Category       types.String         `tfsdk:"category"`
+	Tags           types.List           `tfsdk:"tags"`
 	CompositeQuery jsontypes.Normalized `tfsdk:"composite_query"`
-	ExtraData      types.String `tfsdk:"extra_data"`
-	CreatedAt      types.String `tfsdk:"created_at"`
-	UpdatedAt      types.String `tfsdk:"updated_at"`
-	CreatedBy      types.String `tfsdk:"created_by"`
-	UpdatedBy      types.String `tfsdk:"updated_by"`
+	ExtraData      types.String         `tfsdk:"extra_data"`
+	CreatedAt      types.String         `tfsdk:"created_at"`
+	UpdatedAt      types.String         `tfsdk:"updated_at"`
+	CreatedBy      types.String         `tfsdk:"created_by"`
+	UpdatedBy      types.String         `tfsdk:"updated_by"`
 }
 
 func savedViewAttrTypes() map[string]attr.Type {
@@ -117,10 +117,10 @@ func (r *SavedViewResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					stringvalidator.OneOf("logs", "traces", "metrics"),
 				},
 			},
-			"category": schema.StringAttribute{MarkdownDescription: docSavedViewCategory, Optional: true},
-			"tags":     schema.ListAttribute{MarkdownDescription: docSavedViewTags, Optional: true, ElementType: types.StringType},
+			"category":        schema.StringAttribute{MarkdownDescription: docSavedViewCategory, Optional: true},
+			"tags":            schema.ListAttribute{MarkdownDescription: docSavedViewTags, Optional: true, ElementType: types.StringType},
 			"composite_query": normalizedJSONAttribute(docSavedViewCompositeQuery, true),
-			"extra_data": schema.StringAttribute{MarkdownDescription: docSavedViewExtraData, Optional: true},
+			"extra_data":      schema.StringAttribute{MarkdownDescription: docSavedViewExtraData, Optional: true},
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,

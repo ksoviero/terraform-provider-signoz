@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -13,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -31,12 +31,12 @@ func NewAuthDomainResource() resource.Resource { return &AuthDomainResource{} }
 type AuthDomainResource struct{ client *client.Client }
 
 type authDomainModel struct {
-	ID        types.String `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
+	ID        types.String         `tfsdk:"id"`
+	Name      types.String         `tfsdk:"name"`
 	Config    jsontypes.Normalized `tfsdk:"config"`
-	OrgID     types.String `tfsdk:"org_id"`
-	CreatedAt types.String `tfsdk:"created_at"`
-	UpdatedAt types.String `tfsdk:"updated_at"`
+	OrgID     types.String         `tfsdk:"org_id"`
+	CreatedAt types.String         `tfsdk:"created_at"`
+	UpdatedAt types.String         `tfsdk:"updated_at"`
 }
 
 func authDomainAttrTypes() map[string]attr.Type {
@@ -69,7 +69,7 @@ func (r *AuthDomainResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		MarkdownDescription: docAuthDomainIntro,
 		Attributes: map[string]schema.Attribute{
-			"name": schema.StringAttribute{MarkdownDescription: docAuthDomainName, Required: true},
+			"name":   schema.StringAttribute{MarkdownDescription: docAuthDomainName, Required: true},
 			"config": normalizedJSONOptional(docAuthDomainConfig, true),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,

@@ -6,10 +6,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -29,20 +29,20 @@ type alertRulesDataSourceModel struct {
 }
 
 type alertRuleListElementModel struct {
-	ID          types.String `tfsdk:"id"`
-	Alert       types.String `tfsdk:"alert"`
-	AlertType   types.String `tfsdk:"alert_type"`
-	RuleType    types.String `tfsdk:"rule_type"`
-	Description types.String `tfsdk:"description"`
-	Disabled    types.Bool   `tfsdk:"disabled"`
-	Labels      types.Map    `tfsdk:"labels"`
-	Annotations types.Map    `tfsdk:"annotations"`
+	ID          types.String         `tfsdk:"id"`
+	Alert       types.String         `tfsdk:"alert"`
+	AlertType   types.String         `tfsdk:"alert_type"`
+	RuleType    types.String         `tfsdk:"rule_type"`
+	Description types.String         `tfsdk:"description"`
+	Disabled    types.Bool           `tfsdk:"disabled"`
+	Labels      types.Map            `tfsdk:"labels"`
+	Annotations types.Map            `tfsdk:"annotations"`
 	Spec        jsontypes.Normalized `tfsdk:"spec"`
-	State       types.String `tfsdk:"state"`
-	CreatedAt   types.String `tfsdk:"created_at"`
-	UpdatedAt   types.String `tfsdk:"updated_at"`
-	CreatedBy   types.String `tfsdk:"created_by"`
-	UpdatedBy   types.String `tfsdk:"updated_by"`
+	State       types.String         `tfsdk:"state"`
+	CreatedAt   types.String         `tfsdk:"created_at"`
+	UpdatedAt   types.String         `tfsdk:"updated_at"`
+	CreatedBy   types.String         `tfsdk:"created_by"`
+	UpdatedBy   types.String         `tfsdk:"updated_by"`
 }
 
 func alertRuleListAttrTypes() map[string]attr.Type {

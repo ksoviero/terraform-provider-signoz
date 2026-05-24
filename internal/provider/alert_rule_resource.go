@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -16,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -35,20 +35,20 @@ type AlertRuleResource struct {
 }
 
 type alertRuleModel struct {
-	ID          types.String `tfsdk:"id"`
-	Alert       types.String `tfsdk:"alert"`
-	AlertType   types.String `tfsdk:"alert_type"`
-	RuleType    types.String `tfsdk:"rule_type"`
-	Description types.String `tfsdk:"description"`
-	Disabled    types.Bool   `tfsdk:"disabled"`
-	Labels      types.Map    `tfsdk:"labels"`
-	Annotations types.Map    `tfsdk:"annotations"`
+	ID          types.String         `tfsdk:"id"`
+	Alert       types.String         `tfsdk:"alert"`
+	AlertType   types.String         `tfsdk:"alert_type"`
+	RuleType    types.String         `tfsdk:"rule_type"`
+	Description types.String         `tfsdk:"description"`
+	Disabled    types.Bool           `tfsdk:"disabled"`
+	Labels      types.Map            `tfsdk:"labels"`
+	Annotations types.Map            `tfsdk:"annotations"`
 	Spec        jsontypes.Normalized `tfsdk:"spec"`
-	State       types.String `tfsdk:"state"`
-	CreatedAt   types.String `tfsdk:"created_at"`
-	UpdatedAt   types.String `tfsdk:"updated_at"`
-	CreatedBy   types.String `tfsdk:"created_by"`
-	UpdatedBy   types.String `tfsdk:"updated_by"`
+	State       types.String         `tfsdk:"state"`
+	CreatedAt   types.String         `tfsdk:"created_at"`
+	UpdatedAt   types.String         `tfsdk:"updated_at"`
+	CreatedBy   types.String         `tfsdk:"created_by"`
+	UpdatedBy   types.String         `tfsdk:"updated_by"`
 }
 
 func (r *AlertRuleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {

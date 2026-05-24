@@ -6,9 +6,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -24,14 +24,14 @@ type DashboardDataSource struct {
 }
 
 type dashboardDataSourceModel struct {
-	ID        types.String `tfsdk:"id"`
+	ID        types.String         `tfsdk:"id"`
 	Data      jsontypes.Normalized `tfsdk:"data"`
-	Locked    types.Bool   `tfsdk:"locked"`
-	Source    types.String `tfsdk:"source"`
-	CreatedAt types.String `tfsdk:"created_at"`
-	UpdatedAt types.String `tfsdk:"updated_at"`
-	CreatedBy types.String `tfsdk:"created_by"`
-	UpdatedBy types.String `tfsdk:"updated_by"`
+	Locked    types.Bool           `tfsdk:"locked"`
+	Source    types.String         `tfsdk:"source"`
+	CreatedAt types.String         `tfsdk:"created_at"`
+	UpdatedAt types.String         `tfsdk:"updated_at"`
+	CreatedBy types.String         `tfsdk:"created_by"`
+	UpdatedBy types.String         `tfsdk:"updated_by"`
 }
 
 func (d *DashboardDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

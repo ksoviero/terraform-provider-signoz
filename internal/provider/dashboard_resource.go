@@ -6,11 +6,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,14 +31,14 @@ type DashboardResource struct {
 }
 
 type dashboardModel struct {
-	ID        types.String `tfsdk:"id"`
+	ID        types.String         `tfsdk:"id"`
 	Data      jsontypes.Normalized `tfsdk:"data"`
-	Locked    types.Bool   `tfsdk:"locked"`
-	Source    types.String `tfsdk:"source"`
-	CreatedAt types.String `tfsdk:"created_at"`
-	UpdatedAt types.String `tfsdk:"updated_at"`
-	CreatedBy types.String `tfsdk:"created_by"`
-	UpdatedBy types.String `tfsdk:"updated_by"`
+	Locked    types.Bool           `tfsdk:"locked"`
+	Source    types.String         `tfsdk:"source"`
+	CreatedAt types.String         `tfsdk:"created_at"`
+	UpdatedAt types.String         `tfsdk:"updated_at"`
+	CreatedBy types.String         `tfsdk:"created_by"`
+	UpdatedBy types.String         `tfsdk:"updated_by"`
 }
 
 func (r *DashboardResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
