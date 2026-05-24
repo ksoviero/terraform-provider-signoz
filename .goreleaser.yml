@@ -52,6 +52,5 @@ release:
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
-# Release body from .github/scripts/generate-release-notes.sh via --release-notes-file.
-changelog:
-  disable: true
+# Release body from generate-release-notes.sh via `goreleaser release --release-notes=...`.
+# Do not set changelog.disable: true — it ignores --release-notes and yields an empty body.
