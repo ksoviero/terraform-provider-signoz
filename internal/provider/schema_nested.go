@@ -3,6 +3,7 @@
 package provider
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -32,9 +33,9 @@ func notificationChannelNestedDataSourceAttrs() map[string]dataschema.Attribute 
 	return map[string]dataschema.Attribute{
 		"id":         dataschema.StringAttribute{MarkdownDescription: docID, Computed: true},
 		"name":       dataschema.StringAttribute{MarkdownDescription: docChannelName, Computed: true},
-		"config":     dataschema.StringAttribute{MarkdownDescription: docChannelConfig, Computed: true, Sensitive: true},
+		"config":     dataschema.StringAttribute{MarkdownDescription: docChannelConfig, CustomType: jsontypes.NormalizedType{}, Computed: true, Sensitive: true},
 		"type":       dataschema.StringAttribute{MarkdownDescription: docChannelType, Computed: true},
-		"data":       dataschema.StringAttribute{MarkdownDescription: docChannelData, Computed: true, Sensitive: true},
+		"data":       dataschema.StringAttribute{MarkdownDescription: docChannelData, CustomType: jsontypes.NormalizedType{}, Computed: true, Sensitive: true},
 		"created_at": dataschema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true},
 		"updated_at": dataschema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},
 	}

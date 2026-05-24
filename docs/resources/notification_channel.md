@@ -3,12 +3,12 @@
 page_title: "signoz_notification_channel Resource - signoz"
 subcategory: ""
 description: |-
-  Manages a SigNoz notification channel (/api/v1/channels). config is a JSON receiver object with exactly one *_configs array.
+  Manages a SigNoz notification channel (/api/v1/channels). config is a JSON receiver object with exactly one *_configs array. Set the channel display name with the resource name attribute, not inside config.
 ---
 
 # signoz_notification_channel (Resource)
 
-Manages a SigNoz notification channel (`/api/v1/channels`). `config` is a JSON receiver object with exactly one `*_configs` array.
+Manages a SigNoz notification channel (`/api/v1/channels`). `config` is a JSON receiver object with exactly one `*_configs` array. Set the channel display name with the resource `name` attribute, not inside `config`.
 
 
 
@@ -17,7 +17,7 @@ Manages a SigNoz notification channel (`/api/v1/channels`). `config` is a JSON r
 
 ### Required
 
-- `config` (String, Sensitive) JSON receiver configuration (`AlertmanagertypesPostableChannel`). Include exactly one of: `slack_configs`, `email_configs`, `webhook_configs`, `pagerduty_configs`, `opsgenie_configs`, `discord_configs`, `teams_configs`, `sns_configs`, `telegram_configs`, `pushover_configs`, `victorops_configs`, `wechat_configs`, `webex_configs`, `msteams_configs`, `msteamsv2_configs`, `jira_configs`, `rocketchat_configs`, `mattermost_configs`, `incidentio_configs`. The top-level `name` field is set automatically from the resource `name` attribute on create/update. Sensitive.
+- `config` (String, Sensitive) JSON receiver configuration (`AlertmanagertypesPostableChannel`). Include exactly one of: `slack_configs`, `email_configs`, `webhook_configs`, `pagerduty_configs`, `opsgenie_configs`, `discord_configs`, `teams_configs`, `sns_configs`, `telegram_configs`, `pushover_configs`, `victorops_configs`, `wechat_configs`, `webex_configs`, `msteams_configs`, `msteamsv2_configs`, `jira_configs`, `rocketchat_configs`, `mattermost_configs`, `incidentio_configs`. Do not include a top-level `name` key; the provider sets it from the resource `name` attribute on create/update and omits it from stored `config`. Sensitive.
 - `name` (String) Channel name (unique per organization). Used for data source lookup when `id` is not set.
 
 ### Read-Only
