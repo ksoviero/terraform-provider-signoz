@@ -114,6 +114,24 @@ func modelFromChannel(ch *client.Channel) (notificationChannelModel, error) {
 	}, nil
 }
 
+// notificationChannelStateAfterWrite builds state from the API but keeps the planned
+// config value. SigNoz may canonicalize or mutate receiver JSON on readback; storing
+// the planned config avoids sensitive-attribute apply inconsistencies.
+func notificationChannelStateAfterWrite(plan notificationChannelModel, ch *client.Channel) (notificationChannelModel, error) {
+	out, err := modelFromChannel(ch)
+	if err != nil {
+		return notificationChannelModel{}, err
+	}
+	if !plan.Config.IsNull() && !plan.Config.IsUnknown() {
+		normalized, err := client.NormalizeChannelConfigJSON(plan.Config.ValueString())
+		if err != nil {
+			return notificationChannelModel{}, err
+		}
+		out.Config = newNormalizedJSON(normalized)
+	}
+	return out, nil
+}
+
 func (r *NotificationChannelResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan notificationChannelModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -133,7 +151,7 @@ func (r *NotificationChannelResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	state, err := modelFromChannel(ch)
+	state, err := notificationChannelStateAfterWrite(plan, ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
@@ -187,7 +205,7 @@ func (r *NotificationChannelResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	out, err := modelFromChannel(ch)
+	out, err := notificationChannelStateAfterWrite(plan, ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
