@@ -101,7 +101,7 @@ Local Terraform dev: `dev_overrides` for `registry.terraform.io/ksoviero/signoz`
 
 ## Commit messages and releases
 
-Every commit on the default branch (`main`) should use a **release prefix** at the start of the subject line (case-insensitive). The [Tag on merge](.github/workflows/tag-on-merge.yml) workflow scans commits since the latest `v*` tag and picks the **highest** semver bump, then pushes `vMAJOR.MINOR.PATCH`. That tag triggers [GoReleaser](.github/workflows/release.yml) for Registry artifacts.
+Every commit on the default branch (`main`) should use a **release prefix** at the start of the subject line (case-insensitive). The [Release on merge](.github/workflows/tag-on-merge.yml) workflow scans commits since the latest `v*` tag and picks the **highest** semver bump, then pushes `vMAJOR.MINOR.PATCH`. That tag triggers [GoReleaser](.github/workflows/release.yml), which publishes a **GitHub Release** with grouped release notes (from the same commits) plus signed Registry artifacts.
 
 ### Required format
 
@@ -142,9 +142,13 @@ Merge commits (`Merge pull request …`) are ignored; the workflow uses each mer
 1. **Always** start the subject with one of the release prefixes above when the change should ship to the Registry.
 2. Use the **highest** applicable prefix in a PR (one breaking change → `major:` for the squash/merge commit).
 3. Prefer **squash merge** subjects that include the prefix (e.g. `feat: add saved view resource`), not bare sentences like `Add saved view resource`.
-4. Do not tag manually for routine releases; merging to `main` creates the tag. Manual `v*` tags are only for exceptional recovery.
+4. Do not tag or publish manually for routine releases; merging to `main` creates the tag and GitHub Release. Manual `v*` tags are only for exceptional recovery.
 5. Multiple commits since the last tag: the workflow takes the **maximum** bump (`major` > `minor` > `patch`).
 
 ### Publishing
 
-Registry releases are driven by `v*` tags (auto-created on merge or pushed manually). Manifest: `terraform-registry-manifest.json`. Do not replace assets on an already-published version—ship a new tag.
+1. Merge to `main` with release-prefixed commits → workflow tags `v*`.
+2. Tag push runs GoReleaser: GitHub Release with notes from [generate-release-notes.sh](.github/scripts/generate-release-notes.sh) (Breaking / Features / Bug fixes / Other), plus signed zips and `terraform-registry-manifest.json`.
+3. Terraform Registry picks up the new provider version from that release.
+
+Do not replace assets on an already-published version—ship a new tag.

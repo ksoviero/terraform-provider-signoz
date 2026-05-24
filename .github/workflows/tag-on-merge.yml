@@ -1,6 +1,6 @@
-# Create a semver tag when commits land on the default branch, using commit-prefix
-# rules in AGENTS.md. Pushing the tag triggers release.yml (GoReleaser).
-name: Tag on merge
+# On merge to main: semver tag from commit prefixes (AGENTS.md), then release.yml
+# builds signed artifacts and publishes a GitHub Release with release notes.
+name: Release on merge
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 
 jobs:
   tag:
-    name: Compute and push version tag
+    name: Tag next version
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.actor != 'dependabot[bot]'
     steps:
@@ -34,9 +34,20 @@ jobs:
           echo "$result"
           next="$(echo "$result" | awk -F= '/^next=/ { print $2 }')"
           bump="$(echo "$result" | awk -F= '/^bump=/ { print $2 }')"
+          previous="$(echo "$result" | awk -F= '/^previous=/ { print $2 }')"
           echo "tag=${next}" >> "$GITHUB_OUTPUT"
           echo "bump=${bump}" >> "$GITHUB_OUTPUT"
+          echo "previous=${previous}" >> "$GITHUB_OUTPUT"
           echo "should_tag=true" >> "$GITHUB_OUTPUT"
+
+      - name: Preview release notes
+        if: steps.version.outputs.should_tag == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          bash .github/scripts/generate-release-notes.sh "$TAG" "$PREVIOUS"
 
       - name: Create and push tag
         if: steps.version.outputs.should_tag == 'true'
