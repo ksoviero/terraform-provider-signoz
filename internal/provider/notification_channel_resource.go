@@ -51,7 +51,7 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 				MarkdownDescription: docChannelName,
 				Required:            true,
 			},
-			"config": channelConfigJSONAttribute(docChannelConfig, true, true),
+			"config": normalizedJSONAttributeSensitive(docChannelConfig, true, true),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,
