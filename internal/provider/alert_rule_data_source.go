@@ -100,18 +100,18 @@ func (d *AlertRuleDataSource) Read(ctx context.Context, req datasource.ReadReque
 		return
 	}
 
-	var rule alertRuleModel
+	var read alertRuleReadResult
 	var err error
 	if !config.ID.IsNull() && config.ID.ValueString() != "" {
-		rule, err = readAlertRuleByID(ctx, d.client, config.ID.ValueString())
+		read, err = readAlertRuleByID(ctx, d.client, config.ID.ValueString())
 	} else {
-		rule, err = readAlertRuleByTitle(ctx, d.client, config.Alert.ValueString())
+		read, err = readAlertRuleByTitle(ctx, d.client, config.Alert.ValueString())
 	}
 	if err != nil {
 		resp.Diagnostics.AddError("SigNoz API error", err.Error())
 		return
 	}
 
-	state := alertRuleDataSourceModel(rule)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	out := alertRuleToDataSource(read)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }

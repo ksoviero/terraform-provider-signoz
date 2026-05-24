@@ -34,6 +34,5 @@ Manages a SigNoz alert rule (`/api/v2/rules`). Use `spec` for `condition`, `eval
 - `created_at` (String) RFC3339 timestamp when the object was created. Read-only.
 - `created_by` (String) Identifier of the user or service that created the object. Read-only.
 - `id` (String) SigNoz-assigned UUID. Read-only.
-- `state` (String) Computed evaluation state. Read-only. Valid values: `inactive`, `pending`, `recovering`, `firing`, `nodata`, `disabled`.
 - `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.
 - `updated_by` (String) Identifier of the user or service that last updated the object. Read-only.

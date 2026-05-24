@@ -44,7 +44,6 @@ type alertRuleModel struct {
 	Labels      types.Map            `tfsdk:"labels"`
 	Annotations types.Map            `tfsdk:"annotations"`
 	Spec        jsontypes.Normalized `tfsdk:"spec"`
-	State       types.String         `tfsdk:"state"`
 	CreatedAt   types.String         `tfsdk:"created_at"`
 	UpdatedAt   types.String         `tfsdk:"updated_at"`
 	CreatedBy   types.String         `tfsdk:"created_by"`
@@ -115,10 +114,6 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
-			},
-			"state": schema.StringAttribute{
-				MarkdownDescription: docRuleState,
-				Computed:            true,
 			},
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: docCreatedAt,
@@ -205,14 +200,19 @@ func (r *AlertRuleResource) ruleBodyFromModel(m alertRuleModel) ([]byte, error) 
 	)
 }
 
-func modelFromRuleMap(full map[string]interface{}, spec string) alertRuleModel {
+// alertRuleReadResult holds Terraform-managed fields plus API evaluation state (data sources only).
+type alertRuleReadResult struct {
+	model     alertRuleModel
+	evalState string
+}
+
+func modelFromRuleMap(full map[string]interface{}, spec string) alertRuleReadResult {
 	rule := client.RuleFromMap(full)
 	m := alertRuleModel{
 		ID:          types.StringValue(rule.ID),
 		Alert:       types.StringValue(rule.Alert),
 		AlertType:   types.StringValue(rule.AlertType),
 		RuleType:    types.StringValue(rule.RuleType),
-		State:       types.StringValue(rule.State),
 		Spec:        jsontypes.NewNormalizedValue(spec),
 		Labels:      terraformMapFromStrings(rule.Labels),
 		Annotations: terraformMapFromStrings(rule.Annotations),
@@ -227,7 +227,45 @@ func modelFromRuleMap(full map[string]interface{}, spec string) alertRuleModel {
 		m.Description = types.StringNull()
 	}
 	m.Disabled = types.BoolValue(rule.Disabled)
-	return m
+	return alertRuleReadResult{model: m, evalState: rule.State}
+}
+
+func alertRuleToDataSource(r alertRuleReadResult) alertRuleDataSourceModel {
+	return alertRuleDataSourceModel{
+		ID:          r.model.ID,
+		Alert:       r.model.Alert,
+		AlertType:   r.model.AlertType,
+		RuleType:    r.model.RuleType,
+		Description: r.model.Description,
+		Disabled:    r.model.Disabled,
+		Labels:      r.model.Labels,
+		Annotations: r.model.Annotations,
+		Spec:        r.model.Spec,
+		State:       types.StringValue(r.evalState),
+		CreatedAt:   r.model.CreatedAt,
+		UpdatedAt:   r.model.UpdatedAt,
+		CreatedBy:   r.model.CreatedBy,
+		UpdatedBy:   r.model.UpdatedBy,
+	}
+}
+
+func alertRuleToListElement(r alertRuleReadResult) alertRuleListElementModel {
+	return alertRuleListElementModel{
+		ID:          r.model.ID,
+		Alert:       r.model.Alert,
+		AlertType:   r.model.AlertType,
+		RuleType:    r.model.RuleType,
+		Description: r.model.Description,
+		Disabled:    r.model.Disabled,
+		Labels:      r.model.Labels,
+		Annotations: r.model.Annotations,
+		Spec:        r.model.Spec,
+		State:       types.StringValue(r.evalState),
+		CreatedAt:   r.model.CreatedAt,
+		UpdatedAt:   r.model.UpdatedAt,
+		CreatedBy:   r.model.CreatedBy,
+		UpdatedBy:   r.model.UpdatedBy,
+	}
 }
 
 func (r *AlertRuleResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -260,8 +298,8 @@ func (r *AlertRuleResource) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	state := modelFromRuleMap(full, spec)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
+	read := modelFromRuleMap(full, spec)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
 func (r *AlertRuleResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -282,8 +320,8 @@ func (r *AlertRuleResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	out := modelFromRuleMap(full, spec)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
+	read := modelFromRuleMap(full, spec)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
 func (r *AlertRuleResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
@@ -316,8 +354,8 @@ func (r *AlertRuleResource) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 
-	out := modelFromRuleMap(full, spec)
-	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
+	read := modelFromRuleMap(full, spec)
+	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
 func (r *AlertRuleResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {

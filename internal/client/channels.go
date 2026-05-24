@@ -56,8 +56,67 @@ func (c *Client) DeleteChannel(ctx context.Context, id string) error {
 	return err
 }
 
+// pruneChannelConfigValue removes SigNoz API defaults that should not force Terraform drift:
+// null, empty strings, empty objects, and empty arrays (nested maps are pruned recursively).
+func pruneChannelConfigValue(v interface{}) interface{} {
+	switch x := v.(type) {
+	case map[string]interface{}:
+		pruneChannelConfigMap(x)
+		return x
+	case []interface{}:
+		out := make([]interface{}, 0, len(x))
+		for _, elem := range x {
+			pruned := pruneChannelConfigValue(elem)
+			if pruned == nil {
+				continue
+			}
+			out = append(out, pruned)
+		}
+		return out
+	default:
+		return v
+	}
+}
+
+func pruneChannelConfigMap(m map[string]interface{}) {
+	for k, v := range m {
+		switch val := v.(type) {
+		case nil:
+			delete(m, k)
+		case string:
+			if val == "" {
+				delete(m, k)
+			}
+		case map[string]interface{}:
+			if len(val) == 0 {
+				delete(m, k)
+				continue
+			}
+			pruneChannelConfigMap(val)
+			if len(val) == 0 {
+				delete(m, k)
+			}
+		case []interface{}:
+			if len(val) == 0 {
+				delete(m, k)
+				continue
+			}
+			pruned := pruneChannelConfigValue(val)
+			if arr, ok := pruned.([]interface{}); ok {
+				if len(arr) == 0 {
+					delete(m, k)
+				} else {
+					m[k] = arr
+				}
+			}
+		default:
+			m[k] = pruneChannelConfigValue(val)
+		}
+	}
+}
+
 // NormalizeChannelConfigJSON returns canonical JSON for the Terraform config attribute:
-// receiver configuration with top-level "name" removed (name is set from the resource name).
+// receiver configuration with top-level "name" removed and empty API defaults pruned.
 func NormalizeChannelConfigJSON(raw string) (string, error) {
 	if raw == "" {
 		return "", nil
@@ -67,6 +126,7 @@ func NormalizeChannelConfigJSON(raw string) (string, error) {
 		return "", fmt.Errorf("channel config must be valid JSON: %w", err)
 	}
 	delete(m, "name")
+	pruneChannelConfigMap(m)
 	b, err := json.Marshal(m)
 	if err != nil {
 		return "", err

@@ -36,3 +36,25 @@ func TestNormalizeChannelConfigJSON_empty(t *testing.T) {
 		t.Fatalf("got %q want empty", got)
 	}
 }
+
+func TestNormalizeChannelConfigJSON_prunesAPIDefaults(t *testing.T) {
+	t.Parallel()
+
+	raw := `{
+		"name": "Email",
+		"email_configs": [{
+			"to": "a@example.com",
+			"smarthost": "",
+			"threading": {},
+			"send_resolved": true
+		}]
+	}`
+	got, err := client.NormalizeChannelConfigJSON(raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"email_configs":[{"send_resolved":true,"to":"a@example.com"}]}`
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}
