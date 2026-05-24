@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -24,7 +25,7 @@ type DashboardDataSource struct {
 
 type dashboardDataSourceModel struct {
 	ID        types.String `tfsdk:"id"`
-	Data      types.String `tfsdk:"data"`
+	Data      jsontypes.Normalized `tfsdk:"data"`
 	Locked    types.Bool   `tfsdk:"locked"`
 	Source    types.String `tfsdk:"source"`
 	CreatedAt types.String `tfsdk:"created_at"`

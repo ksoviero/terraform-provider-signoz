@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -36,7 +37,7 @@ type savedViewModel struct {
 	SourcePage     types.String `tfsdk:"source_page"`
 	Category       types.String `tfsdk:"category"`
 	Tags           types.List   `tfsdk:"tags"`
-	CompositeQuery types.String `tfsdk:"composite_query"`
+	CompositeQuery jsontypes.Normalized `tfsdk:"composite_query"`
 	ExtraData      types.String `tfsdk:"extra_data"`
 	CreatedAt      types.String `tfsdk:"created_at"`
 	UpdatedAt      types.String `tfsdk:"updated_at"`
@@ -48,7 +49,7 @@ func savedViewAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"id": types.StringType, "name": types.StringType, "source_page": types.StringType,
 		"category": types.StringType, "tags": types.ListType{ElemType: types.StringType},
-		"composite_query": types.StringType, "extra_data": types.StringType,
+		"composite_query": jsontypes.NormalizedType{}, "extra_data": types.StringType,
 		"created_at": types.StringType, "updated_at": types.StringType,
 		"created_by": types.StringType, "updated_by": types.StringType,
 	}
@@ -69,7 +70,7 @@ func modelFromSavedViewMap(ctx context.Context, m map[string]interface{}) (saved
 		SourcePage:     typesStringValueFromMap(m, "sourcePage"),
 		Category:       typesStringValueFromMap(m, "category"),
 		Tags:           tags,
-		CompositeQuery: types.StringValue(cq),
+		CompositeQuery: newNormalizedJSON(cq),
 		ExtraData:      typesStringValueFromMap(m, "extraData"),
 		CreatedAt:      typesStringValueFromMap(m, "createdAt"),
 		UpdatedAt:      typesStringValueFromMap(m, "updatedAt"),
@@ -118,13 +119,7 @@ func (r *SavedViewResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"category": schema.StringAttribute{MarkdownDescription: docSavedViewCategory, Optional: true},
 			"tags":     schema.ListAttribute{MarkdownDescription: docSavedViewTags, Optional: true, ElementType: types.StringType},
-			"composite_query": schema.StringAttribute{
-				MarkdownDescription: docSavedViewCompositeQuery,
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"composite_query": normalizedJSONAttribute(docSavedViewCompositeQuery, true),
 			"extra_data": schema.StringAttribute{MarkdownDescription: docSavedViewExtraData, Optional: true},
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,

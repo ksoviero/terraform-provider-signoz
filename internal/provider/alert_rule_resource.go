@@ -16,6 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -42,7 +43,7 @@ type alertRuleModel struct {
 	Disabled    types.Bool   `tfsdk:"disabled"`
 	Labels      types.Map    `tfsdk:"labels"`
 	Annotations types.Map    `tfsdk:"annotations"`
-	Spec        types.String `tfsdk:"spec"`
+	Spec        jsontypes.Normalized `tfsdk:"spec"`
 	State       types.String `tfsdk:"state"`
 	CreatedAt   types.String `tfsdk:"created_at"`
 	UpdatedAt   types.String `tfsdk:"updated_at"`
@@ -107,13 +108,7 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					mapplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"spec": schema.StringAttribute{
-				MarkdownDescription: docSpec,
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"spec": normalizedJSONAttribute(docSpec, true),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,
@@ -218,7 +213,7 @@ func modelFromRuleMap(full map[string]interface{}, spec string) alertRuleModel {
 		AlertType:   types.StringValue(rule.AlertType),
 		RuleType:    types.StringValue(rule.RuleType),
 		State:       types.StringValue(rule.State),
-		Spec:        types.StringValue(spec),
+		Spec:        jsontypes.NewNormalizedValue(spec),
 		Labels:      terraformMapFromStrings(rule.Labels),
 		Annotations: terraformMapFromStrings(rule.Annotations),
 		CreatedAt:   types.StringValue(rule.CreatedAt),

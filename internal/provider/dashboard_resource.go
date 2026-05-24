@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,7 +32,7 @@ type DashboardResource struct {
 
 type dashboardModel struct {
 	ID        types.String `tfsdk:"id"`
-	Data      types.String `tfsdk:"data"`
+	Data      jsontypes.Normalized `tfsdk:"data"`
 	Locked    types.Bool   `tfsdk:"locked"`
 	Source    types.String `tfsdk:"source"`
 	CreatedAt types.String `tfsdk:"created_at"`
@@ -48,13 +49,7 @@ func (r *DashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		MarkdownDescription: docDashboardIntro,
 		Attributes: map[string]schema.Attribute{
-			"data": schema.StringAttribute{
-				MarkdownDescription: docDashboardData,
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"data": normalizedJSONAttribute(docDashboardData, true),
 			"locked": schema.BoolAttribute{
 				MarkdownDescription: docDashboardLocked,
 				Optional:            true,
@@ -120,7 +115,7 @@ func modelFromDashboard(d *client.Dashboard) (dashboardModel, error) {
 	}
 	return dashboardModel{
 		ID:        types.StringValue(d.ID),
-		Data:      types.StringValue(dataJSON),
+		Data:      newNormalizedJSON(dataJSON),
 		Locked:    types.BoolValue(d.Locked),
 		Source:    types.StringValue(d.Source),
 		CreatedAt: types.StringValue(d.CreatedAt),

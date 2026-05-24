@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -32,7 +33,7 @@ type AuthDomainResource struct{ client *client.Client }
 type authDomainModel struct {
 	ID        types.String `tfsdk:"id"`
 	Name      types.String `tfsdk:"name"`
-	Config    types.String `tfsdk:"config"`
+	Config    jsontypes.Normalized `tfsdk:"config"`
 	OrgID     types.String `tfsdk:"org_id"`
 	CreatedAt types.String `tfsdk:"created_at"`
 	UpdatedAt types.String `tfsdk:"updated_at"`
@@ -40,7 +41,7 @@ type authDomainModel struct {
 
 func authDomainAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"id": types.StringType, "name": types.StringType, "config": types.StringType,
+		"id": types.StringType, "name": types.StringType, "config": jsontypes.NormalizedType{},
 		"org_id": types.StringType, "created_at": types.StringType, "updated_at": types.StringType,
 	}
 }
@@ -53,7 +54,7 @@ func modelFromAuthDomainMap(m map[string]interface{}) (authDomainModel, error) {
 	return authDomainModel{
 		ID:        typesStringValueFromMap(m, "id"),
 		Name:      typesStringValueFromMap(m, "name"),
-		Config:    types.StringValue(cfg),
+		Config:    newNormalizedJSON(cfg),
 		OrgID:     typesStringValueFromMap(m, "orgId"),
 		CreatedAt: typesStringValueFromMap(m, "createdAt"),
 		UpdatedAt: typesStringValueFromMap(m, "updatedAt"),
@@ -69,14 +70,7 @@ func (r *AuthDomainResource) Schema(_ context.Context, _ resource.SchemaRequest,
 		MarkdownDescription: docAuthDomainIntro,
 		Attributes: map[string]schema.Attribute{
 			"name": schema.StringAttribute{MarkdownDescription: docAuthDomainName, Required: true},
-			"config": schema.StringAttribute{
-				MarkdownDescription: docAuthDomainConfig,
-				Optional:            true,
-				Sensitive:           true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"config": normalizedJSONOptional(docAuthDomainConfig, true),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,

@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -36,7 +37,7 @@ type alertRuleListElementModel struct {
 	Disabled    types.Bool   `tfsdk:"disabled"`
 	Labels      types.Map    `tfsdk:"labels"`
 	Annotations types.Map    `tfsdk:"annotations"`
-	Spec        types.String `tfsdk:"spec"`
+	Spec        jsontypes.Normalized `tfsdk:"spec"`
 	State       types.String `tfsdk:"state"`
 	CreatedAt   types.String `tfsdk:"created_at"`
 	UpdatedAt   types.String `tfsdk:"updated_at"`
@@ -54,7 +55,7 @@ func alertRuleListAttrTypes() map[string]attr.Type {
 		"disabled":    types.BoolType,
 		"labels":      types.MapType{ElemType: types.StringType},
 		"annotations": types.MapType{ElemType: types.StringType},
-		"spec":        types.StringType,
+		"spec":        jsontypes.NormalizedType{},
 		"state":       types.StringType,
 		"created_at":  types.StringType,
 		"updated_at":  types.StringType,

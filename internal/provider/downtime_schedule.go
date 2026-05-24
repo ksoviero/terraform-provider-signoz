@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -36,7 +37,7 @@ type downtimeScheduleModel struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
-	Schedule    types.String `tfsdk:"schedule"`
+	Schedule    jsontypes.Normalized `tfsdk:"schedule"`
 	AlertIDs    types.List   `tfsdk:"alert_ids"`
 	Kind        types.String `tfsdk:"kind"`
 	Status      types.String `tfsdk:"status"`
@@ -49,7 +50,7 @@ type downtimeScheduleModel struct {
 func downtimeScheduleAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"id": types.StringType, "name": types.StringType, "description": types.StringType,
-		"schedule": types.StringType, "alert_ids": types.ListType{ElemType: types.StringType},
+		"schedule": jsontypes.NormalizedType{}, "alert_ids": types.ListType{ElemType: types.StringType},
 		"kind": types.StringType, "status": types.StringType,
 		"created_at": types.StringType, "updated_at": types.StringType,
 		"created_by": types.StringType, "updated_by": types.StringType,
@@ -69,7 +70,7 @@ func modelFromDowntimeScheduleMap(ctx context.Context, m map[string]interface{})
 		ID:          typesStringValueFromMap(m, "id"),
 		Name:        typesStringValueFromMap(m, "name"),
 		Description: typesStringValueFromMap(m, "description"),
-		Schedule:    types.StringValue(schedule),
+		Schedule:    newNormalizedJSON(schedule),
 		AlertIDs:    alerts,
 		Kind:        typesStringValueFromMap(m, "kind"),
 		Status:      typesStringValueFromMap(m, "status"),
@@ -90,13 +91,7 @@ func (r *DowntimeScheduleResource) Schema(_ context.Context, _ resource.SchemaRe
 		Attributes: map[string]schema.Attribute{
 			"name":        schema.StringAttribute{MarkdownDescription: docDowntimeName, Required: true},
 			"description": schema.StringAttribute{MarkdownDescription: docDowntimeDescription, Optional: true},
-			"schedule": schema.StringAttribute{
-				MarkdownDescription: docDowntimeSchedule,
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"schedule": normalizedJSONAttribute(docDowntimeSchedule, true),
 			"alert_ids": schema.ListAttribute{
 				MarkdownDescription: docDowntimeAlertIDs,
 				Optional:            true,

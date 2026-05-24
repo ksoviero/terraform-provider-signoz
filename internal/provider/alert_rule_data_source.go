@@ -11,6 +11,7 @@ import (
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -34,7 +35,7 @@ type alertRuleDataSourceModel struct {
 	Disabled    types.Bool   `tfsdk:"disabled"`
 	Labels      types.Map    `tfsdk:"labels"`
 	Annotations types.Map    `tfsdk:"annotations"`
-	Spec        types.String `tfsdk:"spec"`
+	Spec        jsontypes.Normalized `tfsdk:"spec"`
 	State       types.String `tfsdk:"state"`
 	CreatedAt   types.String `tfsdk:"created_at"`
 	UpdatedAt   types.String `tfsdk:"updated_at"`
