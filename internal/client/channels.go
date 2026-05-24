@@ -56,6 +56,24 @@ func (c *Client) DeleteChannel(ctx context.Context, id string) error {
 	return err
 }
 
+// NormalizeChannelConfigJSON returns canonical JSON for the Terraform config attribute:
+// receiver configuration with top-level "name" removed (name is set from the resource name).
+func NormalizeChannelConfigJSON(raw string) (string, error) {
+	if raw == "" {
+		return "", nil
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return "", fmt.Errorf("channel config must be valid JSON: %w", err)
+	}
+	delete(m, "name")
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	return CanonicalJSON(string(b))
+}
+
 // MergeChannelBody combines name with config JSON into a POST/PUT receiver map.
 func MergeChannelBody(name string, configJSON string) (map[string]interface{}, error) {
 	var m map[string]interface{}

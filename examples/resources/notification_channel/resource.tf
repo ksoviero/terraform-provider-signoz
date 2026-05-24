@@ -1,4 +1,5 @@
 # Notification channel examples (`AlertmanagertypesPostableChannel` in SigNoz OpenAPI).
+# Set the channel display name with the resource `name` attribute only — do not put `name` inside `config`.
 # Each resource sets exactly one *_configs array. Supported keys also include:
 # discord_configs, teams_configs, sns_configs, telegram_configs, pushover_configs,
 # victorops_configs, wechat_configs, webex_configs, msteams_configs, msteamsv2_configs,

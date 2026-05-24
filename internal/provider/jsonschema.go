@@ -50,3 +50,16 @@ func normalizedJSONOptionalWithUnknown(markdown string, sensitive bool) schema.S
 func newNormalizedJSON(value string) jsontypes.Normalized {
 	return jsontypes.NewNormalizedValue(value)
 }
+
+// normalizedJSONComputedSensitive is computed JSON with semantic equality (for API payloads).
+func normalizedJSONComputedSensitive(markdown string) schema.StringAttribute {
+	return schema.StringAttribute{
+		MarkdownDescription: markdown,
+		CustomType:          jsontypes.NormalizedType{},
+		Computed:            true,
+		Sensitive:           true,
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.UseStateForUnknown(),
+		},
+	}
+}

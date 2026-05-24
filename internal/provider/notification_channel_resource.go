@@ -34,7 +34,7 @@ type notificationChannelModel struct {
 	Name      types.String         `tfsdk:"name"`
 	Config    jsontypes.Normalized `tfsdk:"config"`
 	Type      types.String         `tfsdk:"type"`
-	Data      types.String         `tfsdk:"data"`
+	Data      jsontypes.Normalized `tfsdk:"data"`
 	CreatedAt types.String         `tfsdk:"created_at"`
 	UpdatedAt types.String         `tfsdk:"updated_at"`
 }
@@ -51,7 +51,11 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 				MarkdownDescription: docChannelName,
 				Required:            true,
 			},
-			"config": normalizedJSONAttributeSensitive(docChannelConfig, true, true),
+			"config": func() schema.StringAttribute {
+				attr := normalizedJSONAttributeSensitive(docChannelConfig, true, true)
+				attr.PlanModifiers = append(attr.PlanModifiers, normalizeChannelConfigPlanModifier{})
+				return attr
+			}(),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,
@@ -66,14 +70,7 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"data": schema.StringAttribute{
-				MarkdownDescription: docChannelData,
-				Computed:            true,
-				Sensitive:           true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"data": normalizedJSONComputedSensitive(docChannelData),
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: docCreatedAt,
 				Computed:            true,
@@ -102,16 +99,20 @@ func (r *NotificationChannelResource) Configure(_ context.Context, req resource.
 }
 
 func modelFromChannel(ch *client.Channel) (notificationChannelModel, error) {
-	canonical, err := client.CanonicalJSON(ch.Data)
+	configJSON, err := client.NormalizeChannelConfigJSON(ch.Data)
+	if err != nil {
+		return notificationChannelModel{}, err
+	}
+	dataCanonical, err := client.CanonicalJSON(ch.Data)
 	if err != nil {
 		return notificationChannelModel{}, err
 	}
 	return notificationChannelModel{
 		ID:        types.StringValue(ch.ID),
 		Name:      types.StringValue(ch.Name),
-		Config:    newNormalizedJSON(canonical),
+		Config:    newNormalizedJSON(configJSON),
 		Type:      types.StringValue(ch.Type),
-		Data:      types.StringValue(canonical),
+		Data:      newNormalizedJSON(dataCanonical),
 		CreatedAt: types.StringValue(ch.CreatedAt),
 		UpdatedAt: types.StringValue(ch.UpdatedAt),
 	}, nil

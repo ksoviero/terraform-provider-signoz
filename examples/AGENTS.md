@@ -111,7 +111,7 @@ Use these as style anchors when adding or extending examples:
 |-----------|----------------------|
 | `resources/alert_rule/` | Multiple signal types; full v2alpha1 `spec`; channel references; no locals |
 | `resources/auth_domain/` | One resource per IdP / auth mode; full `config` and `roleMapping` inlined |
-| `resources/notification_channel/` | Slack, email, webhook (bearer/basic auth), PagerDuty, Opsgenie; per-field required/optional comments |
+| `resources/notification_channel/` | Slack, email, webhook (bearer/basic auth), PagerDuty, Opsgenie; channel `name` on the resource only (not inside `config`); per-field required/optional comments |
 | `resources/route_policy/` | Expression routing + channel reference |
 | `data-sources/signoz_alert_rule/` | Lookup by `alert` + output |
 

@@ -31,7 +31,7 @@ type notificationChannelDataSourceModel struct {
 	Name      types.String         `tfsdk:"name"`
 	Config    jsontypes.Normalized `tfsdk:"config"`
 	Type      types.String         `tfsdk:"type"`
-	Data      types.String         `tfsdk:"data"`
+	Data      jsontypes.Normalized `tfsdk:"data"`
 	CreatedAt types.String         `tfsdk:"created_at"`
 	UpdatedAt types.String         `tfsdk:"updated_at"`
 }
@@ -60,6 +60,7 @@ func (d *NotificationChannelDataSource) Schema(_ context.Context, _ datasource.S
 			},
 			"config": dataschema.StringAttribute{
 				MarkdownDescription: docChannelConfig,
+				CustomType:          jsontypes.NormalizedType{},
 				Computed:            true,
 				Sensitive:           true,
 			},
@@ -69,6 +70,7 @@ func (d *NotificationChannelDataSource) Schema(_ context.Context, _ datasource.S
 			},
 			"data": dataschema.StringAttribute{
 				MarkdownDescription: docChannelData,
+				CustomType:          jsontypes.NormalizedType{},
 				Computed:            true,
 				Sensitive:           true,
 			},
