@@ -90,9 +90,6 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 			"updated_at": schema.StringAttribute{
 				MarkdownDescription: docUpdatedAt,
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 		},
 	}

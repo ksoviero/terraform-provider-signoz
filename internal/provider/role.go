@@ -85,7 +85,7 @@ func (r *RoleResource) Schema(_ context.Context, _ resource.SchemaRequest, resp 
 			"type":       schema.StringAttribute{MarkdownDescription: docRoleType, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"org_id":     schema.StringAttribute{MarkdownDescription: docOrgID, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"created_at": schema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"updated_at": schema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"updated_at": schema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},
 		},
 	}
 }
