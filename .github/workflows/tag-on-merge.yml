@@ -1,8 +1,8 @@
-# On merge to main: semver tag from commit prefixes (AGENTS.md), then publish release.
+# On merge to main: semver tag from commit prefixes (AGENTS.md), then GitHub Release
+# with grouped notes and GoReleaser artifacts in the same workflow.
 #
 # Tag push uses GITHUB_TOKEN, which does NOT trigger other workflows (see
 # https://docs.github.com/en/actions/using-workflows/triggering-a-workflow).
-# So GoReleaser runs in the release job below, not via a separate tag-push workflow.
 name: Release on merge
 
 on:
@@ -22,6 +22,7 @@ jobs:
     outputs:
       should_tag: ${{ steps.version.outputs.should_tag }}
       tag: ${{ steps.version.outputs.tag }}
+      previous: ${{ steps.version.outputs.previous }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -40,9 +41,20 @@ jobs:
           echo "$result"
           next="$(echo "$result" | awk -F= '/^next=/ { print $2 }')"
           bump="$(echo "$result" | awk -F= '/^bump=/ { print $2 }')"
+          previous="$(echo "$result" | awk -F= '/^previous=/ { print $2 }')"
           echo "tag=${next}" >> "$GITHUB_OUTPUT"
           echo "bump=${bump}" >> "$GITHUB_OUTPUT"
+          echo "previous=${previous}" >> "$GITHUB_OUTPUT"
           echo "should_tag=true" >> "$GITHUB_OUTPUT"
+
+      - name: Preview release notes
+        if: steps.version.outputs.should_tag == 'true'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          bash .github/scripts/generate-release-notes.sh "$TAG" "$PREVIOUS"
 
       - name: Create and push tag
         if: steps.version.outputs.should_tag == 'true'
@@ -70,6 +82,17 @@ jobs:
           fetch-depth: 0
           ref: ${{ needs.tag.outputs.tag }}
 
+      - name: Generate release notes
+        env:
+          TAG: ${{ needs.tag.outputs.tag }}
+          PREVIOUS: ${{ needs.tag.outputs.previous }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          bash .github/scripts/generate-release-notes.sh "$TAG" "$PREVIOUS" > release-notes.md
+          echo "Release notes:"
+          cat release-notes.md
+
       - uses: actions/setup-go@4a3601121dd01d1626a1e23e37211e3254c1c06c # v6.4.0
         with:
           go-version-file: 'go.mod'
@@ -85,7 +108,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@ec59f474b9834571250b370d4735c50f8e2d1e29 # v7.0.0
         with:
-          args: release --clean
+          args: release --clean --release-notes-file=release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GPG_FINGERPRINT: ${{ steps.import_gpg.outputs.fingerprint }}

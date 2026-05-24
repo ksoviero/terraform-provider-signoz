@@ -47,8 +47,11 @@ signs:
       - "--detach-sign"
       - "${artifact}"
 release:
+  mode: replace
+  name_template: "{{ .Tag }}"
   extra_files:
     - glob: 'terraform-registry-manifest.json'
       name_template: '{{ .ProjectName }}_{{ .Version }}_manifest.json'
+# Release body from .github/scripts/generate-release-notes.sh via --release-notes-file.
 changelog:
   disable: true

@@ -101,7 +101,7 @@ Local Terraform dev: `dev_overrides` for `registry.terraform.io/ksoviero/signoz`
 
 ## Commit messages and releases
 
-Every commit on the default branch (`main`) should use a **release prefix** at the start of the subject line (case-insensitive). The [Release on merge](.github/workflows/tag-on-merge.yml) workflow scans commits since the latest `v*` tag, picks the **highest** semver bump, pushes `vMAJOR.MINOR.PATCH`, then runs GoReleaser in the same workflow (tag pushes from `GITHUB_TOKEN` do not start [release.yml](.github/workflows/release.yml); only manual/PAT tag pushes do).
+Every commit on the default branch (`main`) should use a **release prefix** at the start of the subject line (case-insensitive). The [Release on merge](.github/workflows/tag-on-merge.yml) workflow scans commits since the latest `v*` tag, picks the **highest** semver bump, pushes `vMAJOR.MINOR.PATCH`, then publishes a **GitHub Release** with grouped release notes and GoReleaser artifacts in the same workflow (tag pushes from `GITHUB_TOKEN` do not start [release.yml](.github/workflows/release.yml); only manual/PAT tag pushes do).
 
 ### Required format
 
@@ -147,7 +147,7 @@ Merge commits (`Merge pull request …`) are ignored; the workflow uses each mer
 
 ### Publishing
 
-1. Merge to `main` with release-prefixed commits → workflow tags and runs GoReleaser (signed binaries + `terraform-registry-manifest.json`).
-2. Pushing a `v*` tag yourself (or with a PAT) still triggers [release.yml](.github/workflows/release.yml) for ad-hoc releases.
+1. Merge to `main` with release-prefixed commits → workflow tags, builds release notes via [generate-release-notes.sh](.github/scripts/generate-release-notes.sh) (Breaking / Features / Bug fixes / Other), and runs GoReleaser (signed binaries + `terraform-registry-manifest.json`).
+2. Pushing a `v*` tag yourself (or with a PAT) still triggers [release.yml](.github/workflows/release.yml) with the same note generator.
 
 Do not replace assets on an already-published version—ship a new tag. If a tag exists with an empty GitHub Release (no assets), delete that release in the UI before re-running GoReleaser.
