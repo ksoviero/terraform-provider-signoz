@@ -109,12 +109,12 @@ func (r *DowntimeScheduleResource) Schema(_ context.Context, _ resource.SchemaRe
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"kind":       schema.StringAttribute{MarkdownDescription: docDowntimeKind, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"status":     schema.StringAttribute{MarkdownDescription: docDowntimeStatus, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"kind":       schema.StringAttribute{MarkdownDescription: docDowntimeKind, Computed: true},
+			"status":     schema.StringAttribute{MarkdownDescription: docDowntimeStatus, Computed: true},
 			"created_at": schema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"updated_at": schema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"updated_at": schema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},
 			"created_by": schema.StringAttribute{MarkdownDescription: docCreatedBy, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"updated_by": schema.StringAttribute{MarkdownDescription: docUpdatedBy, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"updated_by": schema.StringAttribute{MarkdownDescription: docUpdatedBy, Computed: true},
 		},
 	}
 }

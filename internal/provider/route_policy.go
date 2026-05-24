@@ -123,9 +123,9 @@ func (r *RoutePolicyResource) Schema(_ context.Context, _ resource.SchemaRequest
 				},
 			},
 			"created_at": schema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"updated_at": schema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"updated_at": schema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},
 			"created_by": schema.StringAttribute{MarkdownDescription: docCreatedBy, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"updated_by": schema.StringAttribute{MarkdownDescription: docUpdatedBy, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"updated_by": schema.StringAttribute{MarkdownDescription: docUpdatedBy, Computed: true},
 		},
 	}
 }

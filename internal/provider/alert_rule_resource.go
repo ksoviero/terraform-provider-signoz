@@ -124,9 +124,6 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			"state": schema.StringAttribute{
 				MarkdownDescription: docRuleState,
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: docCreatedAt,
@@ -138,9 +135,6 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			"updated_at": schema.StringAttribute{
 				MarkdownDescription: docUpdatedAt,
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"created_by": schema.StringAttribute{
 				MarkdownDescription: docCreatedBy,
@@ -152,9 +146,6 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			"updated_by": schema.StringAttribute{
 				MarkdownDescription: docUpdatedBy,
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 		},
 	}
