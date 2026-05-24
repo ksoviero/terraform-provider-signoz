@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -30,17 +31,17 @@ func NewAuthDomainResource() resource.Resource { return &AuthDomainResource{} }
 type AuthDomainResource struct{ client *client.Client }
 
 type authDomainModel struct {
-	ID        types.String `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
-	Config    types.String `tfsdk:"config"`
-	OrgID     types.String `tfsdk:"org_id"`
-	CreatedAt types.String `tfsdk:"created_at"`
-	UpdatedAt types.String `tfsdk:"updated_at"`
+	ID        types.String         `tfsdk:"id"`
+	Name      types.String         `tfsdk:"name"`
+	Config    jsontypes.Normalized `tfsdk:"config"`
+	OrgID     types.String         `tfsdk:"org_id"`
+	CreatedAt types.String         `tfsdk:"created_at"`
+	UpdatedAt types.String         `tfsdk:"updated_at"`
 }
 
 func authDomainAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"id": types.StringType, "name": types.StringType, "config": types.StringType,
+		"id": types.StringType, "name": types.StringType, "config": jsontypes.NormalizedType{},
 		"org_id": types.StringType, "created_at": types.StringType, "updated_at": types.StringType,
 	}
 }
@@ -53,7 +54,7 @@ func modelFromAuthDomainMap(m map[string]interface{}) (authDomainModel, error) {
 	return authDomainModel{
 		ID:        typesStringValueFromMap(m, "id"),
 		Name:      typesStringValueFromMap(m, "name"),
-		Config:    types.StringValue(cfg),
+		Config:    newNormalizedJSON(cfg),
 		OrgID:     typesStringValueFromMap(m, "orgId"),
 		CreatedAt: typesStringValueFromMap(m, "createdAt"),
 		UpdatedAt: typesStringValueFromMap(m, "updatedAt"),
@@ -68,15 +69,8 @@ func (r *AuthDomainResource) Schema(_ context.Context, _ resource.SchemaRequest,
 	resp.Schema = schema.Schema{
 		MarkdownDescription: docAuthDomainIntro,
 		Attributes: map[string]schema.Attribute{
-			"name": schema.StringAttribute{MarkdownDescription: docAuthDomainName, Required: true},
-			"config": schema.StringAttribute{
-				MarkdownDescription: docAuthDomainConfig,
-				Optional:            true,
-				Sensitive:           true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"name":   schema.StringAttribute{MarkdownDescription: docAuthDomainName, Required: true},
+			"config": normalizedJSONOptional(docAuthDomainConfig, true),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,

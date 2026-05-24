@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -26,13 +27,13 @@ type NotificationChannelDataSource struct {
 }
 
 type notificationChannelDataSourceModel struct {
-	ID        types.String `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
-	Config    types.String `tfsdk:"config"`
-	Type      types.String `tfsdk:"type"`
-	Data      types.String `tfsdk:"data"`
-	CreatedAt types.String `tfsdk:"created_at"`
-	UpdatedAt types.String `tfsdk:"updated_at"`
+	ID        types.String         `tfsdk:"id"`
+	Name      types.String         `tfsdk:"name"`
+	Config    jsontypes.Normalized `tfsdk:"config"`
+	Type      types.String         `tfsdk:"type"`
+	Data      types.String         `tfsdk:"data"`
+	CreatedAt types.String         `tfsdk:"created_at"`
+	UpdatedAt types.String         `tfsdk:"updated_at"`
 }
 
 func (d *NotificationChannelDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {

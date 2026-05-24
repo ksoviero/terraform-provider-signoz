@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -29,13 +30,13 @@ type NotificationChannelResource struct {
 }
 
 type notificationChannelModel struct {
-	ID        types.String `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
-	Config    types.String `tfsdk:"config"`
-	Type      types.String `tfsdk:"type"`
-	Data      types.String `tfsdk:"data"`
-	CreatedAt types.String `tfsdk:"created_at"`
-	UpdatedAt types.String `tfsdk:"updated_at"`
+	ID        types.String         `tfsdk:"id"`
+	Name      types.String         `tfsdk:"name"`
+	Config    jsontypes.Normalized `tfsdk:"config"`
+	Type      types.String         `tfsdk:"type"`
+	Data      types.String         `tfsdk:"data"`
+	CreatedAt types.String         `tfsdk:"created_at"`
+	UpdatedAt types.String         `tfsdk:"updated_at"`
 }
 
 func (r *NotificationChannelResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -50,14 +51,7 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 				MarkdownDescription: docChannelName,
 				Required:            true,
 			},
-			"config": schema.StringAttribute{
-				MarkdownDescription: docChannelConfig,
-				Required:            true,
-				Sensitive:           true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"config": normalizedJSONAttributeSensitive(docChannelConfig, true, true),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,
@@ -115,7 +109,7 @@ func modelFromChannel(ch *client.Channel) (notificationChannelModel, error) {
 	return notificationChannelModel{
 		ID:        types.StringValue(ch.ID),
 		Name:      types.StringValue(ch.Name),
-		Config:    types.StringValue(canonical),
+		Config:    newNormalizedJSON(canonical),
 		Type:      types.StringValue(ch.Type),
 		Data:      types.StringValue(canonical),
 		CreatedAt: types.StringValue(ch.CreatedAt),

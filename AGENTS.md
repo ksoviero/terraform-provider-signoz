@@ -38,7 +38,7 @@ Ten resources and matching singular/plural data sources (see [README.md](README.
    - Role update: PATCH body is `{ "description" }` only
 2. **Provider** — Prefer one file per domain (e.g. `downtime_schedule.go`) containing resource + singular DS + plural DS. Follow existing files (`notification_channel_resource.go`, `route_policy.go`).
 3. **Schema** — API JSON uses **camelCase**; Terraform attributes use **snake_case**. Map with `MapString(m, "createdAt")` → `created_at`.
-4. **JSON attributes** — Use `canonicalJSONPlanModifier` on user-supplied JSON strings to avoid plan drift (`internal/provider/jsonplanmodifier.go` + `client.CanonicalJSON`).
+4. **JSON attributes** — All user-editable JSON strings use `jsontypes.Normalized` via helpers in `internal/provider/jsonschema.go` (semantic equality for plan). Still canonicalize API payloads with `client.CanonicalJSON` when building state from reads. Do not use a plan modifier alone for JSON.
 5. **Reserved names** — Never use `provider` as a root resource attribute (Terraform reserved). Example: `account_provider` for cloud account API `provider`.
 6. **Register** — Add constructors to `Resources()` and `DataSources()` in `internal/provider/provider.go`.
 7. **Examples** — Add `examples/resources/<name>/resource.tf` and `examples/data-sources/signoz_<name>/` (+ plural). Update `examples/README.md`.

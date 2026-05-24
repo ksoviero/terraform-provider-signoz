@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -34,20 +35,20 @@ type AlertRuleResource struct {
 }
 
 type alertRuleModel struct {
-	ID          types.String `tfsdk:"id"`
-	Alert       types.String `tfsdk:"alert"`
-	AlertType   types.String `tfsdk:"alert_type"`
-	RuleType    types.String `tfsdk:"rule_type"`
-	Description types.String `tfsdk:"description"`
-	Disabled    types.Bool   `tfsdk:"disabled"`
-	Labels      types.Map    `tfsdk:"labels"`
-	Annotations types.Map    `tfsdk:"annotations"`
-	Spec        types.String `tfsdk:"spec"`
-	State       types.String `tfsdk:"state"`
-	CreatedAt   types.String `tfsdk:"created_at"`
-	UpdatedAt   types.String `tfsdk:"updated_at"`
-	CreatedBy   types.String `tfsdk:"created_by"`
-	UpdatedBy   types.String `tfsdk:"updated_by"`
+	ID          types.String         `tfsdk:"id"`
+	Alert       types.String         `tfsdk:"alert"`
+	AlertType   types.String         `tfsdk:"alert_type"`
+	RuleType    types.String         `tfsdk:"rule_type"`
+	Description types.String         `tfsdk:"description"`
+	Disabled    types.Bool           `tfsdk:"disabled"`
+	Labels      types.Map            `tfsdk:"labels"`
+	Annotations types.Map            `tfsdk:"annotations"`
+	Spec        jsontypes.Normalized `tfsdk:"spec"`
+	State       types.String         `tfsdk:"state"`
+	CreatedAt   types.String         `tfsdk:"created_at"`
+	UpdatedAt   types.String         `tfsdk:"updated_at"`
+	CreatedBy   types.String         `tfsdk:"created_by"`
+	UpdatedBy   types.String         `tfsdk:"updated_by"`
 }
 
 func (r *AlertRuleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -107,13 +108,7 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					mapplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"spec": schema.StringAttribute{
-				MarkdownDescription: docSpec,
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"spec": normalizedJSONAttribute(docSpec, true),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,
@@ -218,7 +213,7 @@ func modelFromRuleMap(full map[string]interface{}, spec string) alertRuleModel {
 		AlertType:   types.StringValue(rule.AlertType),
 		RuleType:    types.StringValue(rule.RuleType),
 		State:       types.StringValue(rule.State),
-		Spec:        types.StringValue(spec),
+		Spec:        jsontypes.NewNormalizedValue(spec),
 		Labels:      terraformMapFromStrings(rule.Labels),
 		Annotations: terraformMapFromStrings(rule.Annotations),
 		CreatedAt:   types.StringValue(rule.CreatedAt),

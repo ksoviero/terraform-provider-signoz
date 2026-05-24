@@ -6,6 +6,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -33,23 +34,23 @@ func NewDowntimeScheduleResource() resource.Resource { return &DowntimeScheduleR
 type DowntimeScheduleResource struct{ client *client.Client }
 
 type downtimeScheduleModel struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Schedule    types.String `tfsdk:"schedule"`
-	AlertIDs    types.List   `tfsdk:"alert_ids"`
-	Kind        types.String `tfsdk:"kind"`
-	Status      types.String `tfsdk:"status"`
-	CreatedAt   types.String `tfsdk:"created_at"`
-	UpdatedAt   types.String `tfsdk:"updated_at"`
-	CreatedBy   types.String `tfsdk:"created_by"`
-	UpdatedBy   types.String `tfsdk:"updated_by"`
+	ID          types.String         `tfsdk:"id"`
+	Name        types.String         `tfsdk:"name"`
+	Description types.String         `tfsdk:"description"`
+	Schedule    jsontypes.Normalized `tfsdk:"schedule"`
+	AlertIDs    types.List           `tfsdk:"alert_ids"`
+	Kind        types.String         `tfsdk:"kind"`
+	Status      types.String         `tfsdk:"status"`
+	CreatedAt   types.String         `tfsdk:"created_at"`
+	UpdatedAt   types.String         `tfsdk:"updated_at"`
+	CreatedBy   types.String         `tfsdk:"created_by"`
+	UpdatedBy   types.String         `tfsdk:"updated_by"`
 }
 
 func downtimeScheduleAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
 		"id": types.StringType, "name": types.StringType, "description": types.StringType,
-		"schedule": types.StringType, "alert_ids": types.ListType{ElemType: types.StringType},
+		"schedule": jsontypes.NormalizedType{}, "alert_ids": types.ListType{ElemType: types.StringType},
 		"kind": types.StringType, "status": types.StringType,
 		"created_at": types.StringType, "updated_at": types.StringType,
 		"created_by": types.StringType, "updated_by": types.StringType,
@@ -69,7 +70,7 @@ func modelFromDowntimeScheduleMap(ctx context.Context, m map[string]interface{})
 		ID:          typesStringValueFromMap(m, "id"),
 		Name:        typesStringValueFromMap(m, "name"),
 		Description: typesStringValueFromMap(m, "description"),
-		Schedule:    types.StringValue(schedule),
+		Schedule:    newNormalizedJSON(schedule),
 		AlertIDs:    alerts,
 		Kind:        typesStringValueFromMap(m, "kind"),
 		Status:      typesStringValueFromMap(m, "status"),
@@ -90,13 +91,7 @@ func (r *DowntimeScheduleResource) Schema(_ context.Context, _ resource.SchemaRe
 		Attributes: map[string]schema.Attribute{
 			"name":        schema.StringAttribute{MarkdownDescription: docDowntimeName, Required: true},
 			"description": schema.StringAttribute{MarkdownDescription: docDowntimeDescription, Optional: true},
-			"schedule": schema.StringAttribute{
-				MarkdownDescription: docDowntimeSchedule,
-				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					canonicalJSONPlanModifier{},
-				},
-			},
+			"schedule":    normalizedJSONAttribute(docDowntimeSchedule, true),
 			"alert_ids": schema.ListAttribute{
 				MarkdownDescription: docDowntimeAlertIDs,
 				Optional:            true,
