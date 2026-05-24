@@ -109,13 +109,15 @@ Every commit on the default branch (`main`) should use a **release prefix** at t
 <prefix>: <short description>
 ```
 
+Optional [Conventional Commits](https://www.conventionalcommits.org/) scopes are fine (`fix(ci): …`); [compute-next-version.sh](.github/scripts/compute-next-version.sh) and [generate-release-notes.sh](.github/scripts/generate-release-notes.sh) strip `prefix(scope):` to `prefix:` before classifying.
+
 Examples:
 
 ```text
 feat: add signoz_route_policy data source
+fix(ci): use goreleaser --release-notes flag for v2
 patch: correct alert rule spec JSON canonicalization
-bug: handle empty channel list on read
-major: remove deprecated alert_rule fields
+ci: pin GoReleaser v2 in release workflow
 ```
 
 ### Prefix → version bump
