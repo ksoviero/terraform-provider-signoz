@@ -1,3 +1,5 @@
+# Manual or PAT-pushed tags only. Tags pushed by Release on merge use GITHUB_TOKEN and
+# do not trigger this workflow; GoReleaser runs in the release job there instead.
 name: Release
 
 on:
