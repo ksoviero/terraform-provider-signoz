@@ -168,7 +168,11 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	out, err := modelFromChannel(ch)
+	// Preserve the stored config value rather than re-deriving it from the API.
+	// The SigNoz API injects Alertmanager defaults into the receiver JSON on
+	// read-back; re-normalizing here would cause drift for fields the user
+	// explicitly set to a default value. The config is only updated by plan/apply.
+	out, err := notificationChannelStateAfterWrite(state, ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
