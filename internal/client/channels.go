@@ -78,8 +78,37 @@ func pruneChannelConfigValue(v interface{}) interface{} {
 	}
 }
 
+// alertmanagerDefaultBools are http_config boolean fields that Alertmanager always
+// echoes back at their default values. Pruning them prevents phantom drift when
+// users omit http_config entirely.
+var alertmanagerDefaultBools = map[string]bool{
+	"follow_redirects": true,
+	"enable_http2":     true,
+	"insecure_skip_verify": false,
+}
+
+// alertmanagerDefaultStrings are fields the API echoes at known default values
+// that users would never explicitly set.
+var alertmanagerDefaultStrings = map[string]string{
+	"api_url": "https://api.opsgenie.com/",
+}
+
 func pruneChannelConfigMap(m map[string]interface{}) {
 	for k, v := range m {
+		// Prune known Alertmanager default string values
+		if defaultVal, isDefaultStr := alertmanagerDefaultStrings[k]; isDefaultStr {
+			if s, ok := v.(string); ok && s == defaultVal {
+				delete(m, k)
+				continue
+			}
+		}
+		// Prune known Alertmanager default boolean values
+		if defaultVal, isDefaultBool := alertmanagerDefaultBools[k]; isDefaultBool {
+			if b, ok := v.(bool); ok && b == defaultVal {
+				delete(m, k)
+				continue
+			}
+		}
 		switch val := v.(type) {
 		case nil:
 			delete(m, k)
