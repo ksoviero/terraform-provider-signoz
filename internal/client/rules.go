@@ -273,4 +273,3 @@ func stripTopLevelDuplicates(spec map[string]interface{}) {
 		delete(spec, k)
 	}
 }
-
