@@ -56,8 +56,89 @@ func (c *Client) DeleteChannel(ctx context.Context, id string) error {
 	return err
 }
 
-// pruneChannelConfigValue removes SigNoz API defaults that should not force Terraform drift:
-// null, empty strings, empty objects, and empty arrays (nested maps are pruned recursively).
+// alertmanagerHTTPConfigDefaultBools are boolean fields inside http_config that
+// Alertmanager always echoes at their default values. Pruning them prevents
+// phantom drift when users omit http_config entirely.
+var alertmanagerHTTPConfigDefaultBools = map[string]bool{
+	"follow_redirects":     true,
+	"enable_http2":         true,
+	"insecure_skip_verify": false,
+}
+
+// alertmanagerDefaultFieldValues maps field names to the set of string values
+// that Alertmanager injects as defaults. A field is pruned only when its value
+// exactly matches one of these known defaults, so user-set values are preserved.
+//
+// Sources: Prometheus Alertmanager DefaultXxxConfig structs and global config:
+//   - OpsGenie api_url: GlobalConfig.OpsGenieAPIURL
+//   - PagerDuty url: hardcoded in pagerduty notifier
+//   - Slack app_url: always injected (internal Slack app URL)
+//   - Telegram parse_mode: DefaultTelegramConfig
+//   - Email html: DefaultEmailConfig
+//   - Template strings: DefaultXxxConfig per receiver
+var alertmanagerDefaultFieldValues = map[string][]string{
+	// OpsGenie: global default API URL
+	"api_url": {"https://api.opsgenie.com/"},
+
+	// Slack: internal app URL, always injected
+	"app_url": {"https://slack.com/api/chat.postMessage"},
+
+	// Telegram
+	"parse_mode": {"HTML"},
+
+	// Slack template defaults
+	"callback_id": {`{{ template "slack.default.callbackid" . }}`},
+	"color":       {`{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}`},
+	"fallback":    {`{{ template "slack.default.fallback" . }}`},
+	"footer":      {`{{ template "slack.default.footer" . }}`},
+	"icon_emoji":  {`{{ template "slack.default.iconemoji" . }}`},
+	"icon_url":    {`{{ template "slack.default.iconurl" . }}`},
+	"pretext":     {`{{ template "slack.default.pretext" . }}`},
+	"title":       {`{{ template "slack.default.title" . }}`},
+	"title_link":  {`{{ template "slack.default.titlelink" . }}`},
+	"username":    {`{{ template "slack.default.username" . }}`},
+
+	// PagerDuty template defaults and default API URL
+	"client":     {`{{ template "pagerduty.default.client" . }}`},
+	"client_url": {`{{ template "pagerduty.default.clientURL" . }}`},
+	// PagerDuty url default (hardcoded in notifier)
+	"url": {"https://events.pagerduty.com/v2/enqueue"},
+
+	// description and source are shared between PagerDuty and OpsGenie with
+	// different default values — list both so either is pruned.
+	"description": {
+		`{{ template "pagerduty.default.description" .}}`,
+		`{{ template "opsgenie.default.description" . }}`,
+	},
+	"source": {
+		`{{ template "pagerduty.default.client" . }}`,
+		`{{ template "opsgenie.default.source" . }}`,
+	},
+
+	// Email template default
+	"html": {`{{ template "email.default.html" . }}`},
+}
+
+// alertmanagerDefaultNumericZeroFields are fields where a value of 0
+// (integer or float) is always an Alertmanager default and never
+// meaningful when explicitly set to 0 by the user.
+var alertmanagerDefaultNumericZeroFields = map[string]bool{
+	"timeout": true,
+}
+
+// alertmanagerDefaultPagerDutyDetails is the map of details fields PagerDuty
+// injects by default. If the user did not set details, the API echoes these;
+// we prune them to prevent drift.
+var alertmanagerDefaultPagerDutyDetails = map[string]string{
+	"firing":       `{{ .Alerts.Firing | toJson }}`,
+	"num_firing":   `{{ .Alerts.Firing | len }}`,
+	"num_resolved": `{{ .Alerts.Resolved | len }}`,
+	"resolved":     `{{ .Alerts.Resolved | toJson }}`,
+}
+
+// pruneChannelConfigValue removes SigNoz/Alertmanager API defaults that should
+// not force Terraform drift. Pruned values: null, empty strings, empty objects,
+// empty arrays, known Alertmanager default booleans/strings/numerics.
 func pruneChannelConfigValue(v interface{}) interface{} {
 	switch x := v.(type) {
 	case map[string]interface{}:
@@ -80,6 +161,46 @@ func pruneChannelConfigValue(v interface{}) interface{} {
 
 func pruneChannelConfigMap(m map[string]interface{}) {
 	for k, v := range m {
+		// Prune known Alertmanager default string values (only when the value
+		// exactly matches one of the injected defaults — preserves user-set values).
+		if defaults, ok := alertmanagerDefaultFieldValues[k]; ok {
+			if s, ok := v.(string); ok {
+				for _, defaultVal := range defaults {
+					if s == defaultVal {
+						delete(m, k)
+						break
+					}
+				}
+				if _, stillThere := m[k]; !stillThere {
+					continue
+				}
+			}
+		}
+
+		// Prune known http_config boolean defaults.
+		if defaultVal, ok := alertmanagerHTTPConfigDefaultBools[k]; ok {
+			if b, ok := v.(bool); ok && b == defaultVal {
+				delete(m, k)
+				continue
+			}
+		}
+
+		// Prune numeric zero for fields that are never meaningfully zero.
+		if alertmanagerDefaultNumericZeroFields[k] {
+			switch n := v.(type) {
+			case float64:
+				if n == 0 {
+					delete(m, k)
+					continue
+				}
+			case int:
+				if n == 0 {
+					delete(m, k)
+					continue
+				}
+			}
+		}
+
 		switch val := v.(type) {
 		case nil:
 			delete(m, k)
@@ -89,6 +210,11 @@ func pruneChannelConfigMap(m map[string]interface{}) {
 			}
 		case map[string]interface{}:
 			if len(val) == 0 {
+				delete(m, k)
+				continue
+			}
+			// Special case: prune PagerDuty default details map.
+			if k == "details" && isPagerDutyDefaultDetails(val) {
 				delete(m, k)
 				continue
 			}
@@ -115,8 +241,24 @@ func pruneChannelConfigMap(m map[string]interface{}) {
 	}
 }
 
+// isPagerDutyDefaultDetails returns true when the details map contains only
+// the four default PagerDuty template strings and nothing else.
+func isPagerDutyDefaultDetails(m map[string]interface{}) bool {
+	if len(m) != len(alertmanagerDefaultPagerDutyDetails) {
+		return false
+	}
+	for k, want := range alertmanagerDefaultPagerDutyDetails {
+		got, ok := m[k].(string)
+		if !ok || got != want {
+			return false
+		}
+	}
+	return true
+}
+
 // NormalizeChannelConfigJSON returns canonical JSON for the Terraform config attribute:
-// receiver configuration with top-level "name" removed and empty API defaults pruned.
+// receiver configuration with top-level "name" removed and Alertmanager-injected
+// defaults pruned to prevent phantom drift.
 func NormalizeChannelConfigJSON(raw string) (string, error) {
 	if raw == "" {
 		return "", nil

@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strings"
 )
 
 // Rule is the v2 API read model for an alert rule.
@@ -150,6 +152,93 @@ func BuildRuleBody(alert, alertType, ruleType, description string, disabled bool
 	return json.Marshal(body)
 }
 
+// inListSpaceRe matches bracket-enclosed IN list values in filter expressions.
+var inListSpaceRe = regexp.MustCompile(`IN\s*\[([^\]]+)\]`)
+
+// normalizeFilterExpression normalizes filter expressions returned by the API:
+//   - Replaces double-quoted IN list values with single-quoted ones
+//   - Ensures consistent ", " spacing between list items
+func normalizeFilterExpression(expr string) string {
+	return inListSpaceRe.ReplaceAllStringFunc(expr, func(match string) string {
+		// Extract inner content between [ and ]
+		inner := match[strings.Index(match, "[")+1 : len(match)-1]
+		parts := strings.Split(inner, ",")
+		normalized := make([]string, 0, len(parts))
+		for _, p := range parts {
+			p = strings.TrimSpace(p)
+			// Normalize double-quoted values to single-quoted
+			if len(p) >= 2 && p[0] == '"' && p[len(p)-1] == '"' {
+				p = "'" + p[1:len(p)-1] + "'"
+			}
+			normalized = append(normalized, p)
+		}
+		return "IN [" + strings.Join(normalized, ", ") + "]"
+	})
+}
+
+// normalizeRuleSpec recursively walks the decoded spec and removes zero-value
+// fields that the API always echoes back but users never set in config.
+func normalizeRuleSpec(v interface{}) interface{} {
+	switch t := v.(type) {
+	case map[string]interface{}:
+		for k, val := range t {
+			switch k {
+			case "source":
+				// Remove empty source (zero value, not meaningful)
+				if s, ok := val.(string); ok && s == "" {
+					delete(t, k)
+				}
+			case "stepInterval":
+				// Remove zero stepInterval (default for log/trace queries)
+				if isZeroNumber(val) {
+					delete(t, k)
+				}
+			case "having":
+				// Remove having:{expression:""} (zero value)
+				if m, ok := val.(map[string]interface{}); ok {
+					if expr, ok := m["expression"].(string); ok && expr == "" && len(m) == 1 {
+						delete(t, k)
+					}
+				}
+			case "recoveryTarget":
+				// Remove null recoveryTarget
+				if val == nil {
+					delete(t, k)
+				}
+			case "targetUnit":
+				// Remove empty targetUnit
+				if s, ok := val.(string); ok && s == "" {
+					delete(t, k)
+				}
+			case "expression":
+				// Normalize filter expressions
+				if s, ok := val.(string); ok {
+					t[k] = normalizeFilterExpression(s)
+				}
+			default:
+				t[k] = normalizeRuleSpec(val)
+			}
+		}
+	case []interface{}:
+		for i, item := range t {
+			t[i] = normalizeRuleSpec(item)
+		}
+	}
+	return v
+}
+
+func isZeroNumber(v interface{}) bool {
+	switch n := v.(type) {
+	case float64:
+		return n == 0
+	case int:
+		return n == 0
+	case int64:
+		return n == 0
+	}
+	return false
+}
+
 // RuleSpecFromMap returns JSON for attributes stored in spec (everything except top-level fields).
 func RuleSpecFromMap(full map[string]interface{}) (string, error) {
 	copy := make(map[string]interface{}, len(full))
@@ -162,9 +251,25 @@ func RuleSpecFromMap(full map[string]interface{}) (string, error) {
 	} {
 		delete(copy, k)
 	}
+
+	// The API echoes evalWindow/frequency at the top level as duplicates of
+	// evaluation.spec values. Strip them only when they match, so users who
+	// intentionally set top-level values still see a diff.
+	stripTopLevelDuplicates(copy)
+
+	normalizeRuleSpec(copy)
 	b, err := json.Marshal(copy)
 	if err != nil {
 		return "", err
 	}
 	return CanonicalJSON(string(b))
+}
+
+// stripTopLevelDuplicates removes top-level evalWindow/frequency. The API always
+// echoes these as legacy fields regardless of the canonical values in
+// evaluation.spec, so they are stripped unconditionally.
+func stripTopLevelDuplicates(spec map[string]interface{}) {
+	for _, k := range []string{"evalWindow", "frequency"} {
+		delete(spec, k)
+	}
 }
