@@ -255,6 +255,7 @@ func isPagerDutyDefaultDetails(m map[string]interface{}) bool {
 	}
 	return true
 }
+
 // NormalizeChannelConfigJSON returns canonical JSON for the Terraform config attribute:
 // receiver configuration with top-level "name" removed and Alertmanager-injected
 // defaults pruned to prevent phantom drift.

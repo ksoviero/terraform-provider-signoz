@@ -210,12 +210,12 @@ func TestRuleSpecFromMap(t *testing.T) {
 	t.Parallel()
 
 	full := map[string]interface{}{
-		"id":          "abc",
-		"alert":       "Test",
-		"alertType":   "METRIC_BASED_ALERT",
-		"ruleType":    "threshold_rule",
+		"id":            "abc",
+		"alert":         "Test",
+		"alertType":     "METRIC_BASED_ALERT",
+		"ruleType":      "threshold_rule",
 		"schemaVersion": "v2alpha1",
-		"version":     "v5",
+		"version":       "v5",
 		"condition": map[string]interface{}{
 			"compositeQuery": map[string]interface{}{
 				"queries": []interface{}{
