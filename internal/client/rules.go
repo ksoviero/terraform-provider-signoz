@@ -193,6 +193,16 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if isZeroNumber(val) {
 					delete(t, k)
 				}
+			case "step":
+				// Remove zero step (default for promql queries)
+				if isZeroNumber(val) {
+					delete(t, k)
+				}
+			case "reduceTo", "temporality":
+				// Remove empty aggregation defaults injected by the UI/API.
+				if s, ok := val.(string); ok && s == "" {
+					delete(t, k)
+				}
 			case "having":
 				// Remove having:{expression:""} (zero value)
 				if m, ok := val.(map[string]interface{}); ok {
@@ -237,6 +247,25 @@ func isZeroNumber(v interface{}) bool {
 		return n == 0
 	}
 	return false
+}
+
+// NormalizeRuleSpecJSON normalizes spec JSON using the same drift-pruning rules
+// applied to API read payloads before storing Terraform state.
+func NormalizeRuleSpecJSON(raw string) (string, error) {
+	if raw == "" {
+		return "", nil
+	}
+	var spec map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &spec); err != nil {
+		return "", fmt.Errorf("spec must be valid JSON: %w", err)
+	}
+	stripTopLevelDuplicates(spec)
+	normalizeRuleSpec(spec)
+	b, err := json.Marshal(spec)
+	if err != nil {
+		return "", err
+	}
+	return CanonicalJSON(string(b))
 }
 
 // RuleSpecFromMap returns JSON for attributes stored in spec (everything except top-level fields).
