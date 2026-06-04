@@ -108,13 +108,13 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				},
 			},
 			"spec": schema.StringAttribute{
-					MarkdownDescription: docSpec,
-					CustomType:          jsontypes.NormalizedType{},
-					Required:            true,
-					PlanModifiers: []planmodifier.String{
-						normalizeAlertRuleSpecModifier{},
-					},
+				MarkdownDescription: docSpec,
+				CustomType:          jsontypes.NormalizedType{},
+				Required:            true,
+				PlanModifiers: []planmodifier.String{
+					normalizeAlertRuleSpecModifier{},
 				},
+			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,
