@@ -92,6 +92,7 @@ Local Terraform dev: `dev_overrides` for `registry.terraform.io/ksoviero/signoz`
 - Match existing error messages: `SigNoz API error`, `Invalid configuration`, `Internal error`
 - Keep diffs focused; do not refactor unrelated resources
 - Do not commit API keys, `.env`, or real credentials in examples (use placeholders and variables)
+- **Always run `make lint` before pushing.** CI will reject lint failures and a fixup commit wastes a release slot.
 
 ## Testing
 
