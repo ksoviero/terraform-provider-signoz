@@ -3,11 +3,40 @@
 package provider
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
+
+// normalizeAlertRuleSpecModifier normalizes the alert rule spec JSON in the plan,
+// stripping API-default fields (disabled:false, empty strings, zero numbers) so the
+// plan and post-Create state agree without requiring users to omit those fields.
+type normalizeAlertRuleSpecModifier struct{}
+
+func (m normalizeAlertRuleSpecModifier) Description(_ context.Context) string {
+	return "Normalizes alert rule spec JSON by stripping API-default fields."
+}
+
+func (m normalizeAlertRuleSpecModifier) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m normalizeAlertRuleSpecModifier) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.PlanValue.IsUnknown() || req.PlanValue.IsNull() {
+		return
+	}
+	normalized, err := client.NormalizeRuleSpecJSON(req.PlanValue.ValueString())
+	if err != nil {
+		// Leave the value as-is; validation will catch malformed JSON.
+		return
+	}
+	resp.PlanValue = types.StringValue(normalized)
+}
 
 // normalizedJSONAttribute is required JSON with semantic equality (whitespace and key order ignored).
 func normalizedJSONAttribute(markdown string, required bool) schema.StringAttribute {

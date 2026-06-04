@@ -203,6 +203,11 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if s, ok := val.(string); ok && s == "" {
 					delete(t, k)
 				}
+			case "disabled":
+				// Remove disabled:false — the API omits this default on read.
+				if b, ok := val.(bool); ok && !b {
+					delete(t, k)
+				}
 			case "having":
 				// Remove having:{expression:""} (zero value)
 				if m, ok := val.(map[string]interface{}); ok {
