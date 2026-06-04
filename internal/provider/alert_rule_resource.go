@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -18,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
 
@@ -35,19 +35,19 @@ type AlertRuleResource struct {
 }
 
 type alertRuleModel struct {
-	ID          types.String         `tfsdk:"id"`
-	Alert       types.String         `tfsdk:"alert"`
-	AlertType   types.String         `tfsdk:"alert_type"`
-	RuleType    types.String         `tfsdk:"rule_type"`
-	Description types.String         `tfsdk:"description"`
-	Disabled    types.Bool           `tfsdk:"disabled"`
-	Labels      types.Map            `tfsdk:"labels"`
-	Annotations types.Map            `tfsdk:"annotations"`
-	Spec        jsontypes.Normalized `tfsdk:"spec"`
-	CreatedAt   types.String         `tfsdk:"created_at"`
-	UpdatedAt   types.String         `tfsdk:"updated_at"`
-	CreatedBy   types.String         `tfsdk:"created_by"`
-	UpdatedBy   types.String         `tfsdk:"updated_by"`
+	ID          types.String       `tfsdk:"id"`
+	Alert       types.String       `tfsdk:"alert"`
+	AlertType   types.String       `tfsdk:"alert_type"`
+	RuleType    types.String       `tfsdk:"rule_type"`
+	Description types.String       `tfsdk:"description"`
+	Disabled    types.Bool         `tfsdk:"disabled"`
+	Labels      types.Map          `tfsdk:"labels"`
+	Annotations types.Map          `tfsdk:"annotations"`
+	Spec        alertRuleSpecValue `tfsdk:"spec"`
+	CreatedAt   types.String       `tfsdk:"created_at"`
+	UpdatedAt   types.String       `tfsdk:"updated_at"`
+	CreatedBy   types.String       `tfsdk:"created_by"`
+	UpdatedBy   types.String       `tfsdk:"updated_by"`
 }
 
 func (r *AlertRuleResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -109,11 +109,8 @@ func (r *AlertRuleResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 			},
 			"spec": schema.StringAttribute{
 				MarkdownDescription: docSpec,
-				CustomType:          jsontypes.NormalizedType{},
+				CustomType:          alertRuleSpecTypeInstance,
 				Required:            true,
-				PlanModifiers: []planmodifier.String{
-					normalizeAlertRuleSpecModifier{},
-				},
 			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
@@ -220,7 +217,7 @@ func modelFromRuleMap(full map[string]interface{}, spec string) alertRuleReadRes
 		Alert:       types.StringValue(rule.Alert),
 		AlertType:   types.StringValue(rule.AlertType),
 		RuleType:    types.StringValue(rule.RuleType),
-		Spec:        jsontypes.NewNormalizedValue(spec),
+		Spec:        alertRuleSpecValue{StringValue: basetypes.NewStringValue(spec)},
 		Labels:      terraformMapFromStrings(rule.Labels),
 		Annotations: terraformMapFromStrings(rule.Annotations),
 		CreatedAt:   types.StringValue(rule.CreatedAt),
@@ -247,7 +244,7 @@ func alertRuleToDataSource(r alertRuleReadResult) alertRuleDataSourceModel {
 		Disabled:    r.model.Disabled,
 		Labels:      r.model.Labels,
 		Annotations: r.model.Annotations,
-		Spec:        r.model.Spec,
+		Spec:        newNormalizedJSON(r.model.Spec.ValueString()),
 		State:       types.StringValue(r.evalState),
 		CreatedAt:   r.model.CreatedAt,
 		UpdatedAt:   r.model.UpdatedAt,
@@ -266,7 +263,7 @@ func alertRuleToListElement(r alertRuleReadResult) alertRuleListElementModel {
 		Disabled:    r.model.Disabled,
 		Labels:      r.model.Labels,
 		Annotations: r.model.Annotations,
-		Spec:        r.model.Spec,
+		Spec:        newNormalizedJSON(r.model.Spec.ValueString()),
 		State:       types.StringValue(r.evalState),
 		CreatedAt:   r.model.CreatedAt,
 		UpdatedAt:   r.model.UpdatedAt,
