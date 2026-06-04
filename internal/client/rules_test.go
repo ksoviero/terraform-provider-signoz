@@ -206,6 +206,97 @@ func TestNormalizeRuleSpecJSON_builderEmptyAggregationFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeRuleSpecJSON_builderQueryDisabledFalse(t *testing.T) {
+	t.Parallel()
+
+	// Config has disabled:false inside the builder query spec; API omits it on read.
+	config := `{
+		"condition": {
+			"compositeQuery": {
+				"queries": [{
+					"type": "builder_query",
+					"spec": {
+						"name": "A",
+						"signal": "metrics",
+						"stepInterval": 60,
+						"disabled": false,
+						"aggregations": [{
+							"metricName": "amazonaws.com/AWS/RDS/DatabaseConnections.quantile",
+							"temporality": "unspecified",
+							"timeAggregation": "min",
+							"spaceAggregation": "max",
+							"reduceTo": "min"
+						}],
+						"filter": {"expression": "DBInstanceIdentifier = 'zengrc-prod-4'"},
+						"groupBy": [{"name": "DBInstanceIdentifier", "fieldContext": "attribute"}]
+					}
+				}],
+				"panelType": "graph",
+				"queryType": "builder"
+			},
+			"selectedQueryName": "A",
+			"thresholds": {
+				"kind": "basic",
+				"spec": [{"name": "critical", "target": 6871, "matchType": "all_the_times", "op": "above", "channels": ["Slack (Prod)"]}]
+			}
+		},
+		"disabled": false,
+		"evaluation": {"kind": "rolling", "spec": {"evalWindow": "5m0s", "frequency": "1m"}},
+		"notificationSettings": {"groupBy": ["__all__"], "renotify": {"enabled": false, "interval": "30m"}},
+		"schemaVersion": "v2alpha1",
+		"source": "https://signoz.management.zengrc.net/alerts",
+		"version": "v5"
+	}`
+
+	apiResponse := `{
+		"condition": {
+			"compositeQuery": {
+				"queries": [{
+					"type": "builder_query",
+					"spec": {
+						"name": "A",
+						"signal": "metrics",
+						"stepInterval": 60,
+						"aggregations": [{
+							"metricName": "amazonaws.com/AWS/RDS/DatabaseConnections.quantile",
+							"temporality": "unspecified",
+							"timeAggregation": "min",
+							"spaceAggregation": "max",
+							"reduceTo": "min"
+						}],
+						"filter": {"expression": "DBInstanceIdentifier = 'zengrc-prod-4'"},
+						"groupBy": [{"name": "DBInstanceIdentifier", "fieldContext": "attribute"}]
+					}
+				}],
+				"panelType": "graph",
+				"queryType": "builder"
+			},
+			"selectedQueryName": "A",
+			"thresholds": {
+				"kind": "basic",
+				"spec": [{"name": "critical", "target": 6871, "matchType": "all_the_times", "op": "above", "channels": ["Slack (Prod)"]}]
+			}
+		},
+		"evaluation": {"kind": "rolling", "spec": {"evalWindow": "5m0s", "frequency": "1m"}},
+		"notificationSettings": {"groupBy": ["__all__"], "renotify": {"enabled": false, "interval": "30m"}},
+		"schemaVersion": "v2alpha1",
+		"source": "https://signoz.management.zengrc.net/alerts",
+		"version": "v5"
+	}`
+
+	configNorm, err := client.NormalizeRuleSpecJSON(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	apiNorm, err := client.NormalizeRuleSpecJSON(apiResponse)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if configNorm != apiNorm {
+		t.Fatalf("normalized config and API response differ:\nconfig: %s\napi:    %s", configNorm, apiNorm)
+	}
+}
+
 func TestRuleSpecFromMap(t *testing.T) {
 	t.Parallel()
 
