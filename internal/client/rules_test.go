@@ -375,6 +375,79 @@ func TestNormalizeRuleSpecJSON_legendAndUsePolicyDefaults(t *testing.T) {
 	}
 }
 
+func TestNormalizeRuleSpecJSON_groupByEmptySignal(t *testing.T) {
+	t.Parallel()
+
+	// Config omits signal on the groupBy entry; the API echoes it back as "".
+	config := `{
+		"condition": {
+			"compositeQuery": {
+				"queries": [{
+					"type": "builder_query",
+					"spec": {
+						"name": "A",
+						"signal": "metrics",
+						"aggregations": [{"metricName": "k8s.pod.phase", "timeAggregation": "latest", "spaceAggregation": "avg"}],
+						"filter": {"expression": ""},
+						"groupBy": [{"name": "k8s.pod.name", "fieldContext": "attribute"}]
+					}
+				}],
+				"panelType": "graph",
+				"queryType": "builder"
+			},
+			"selectedQueryName": "A",
+			"thresholds": {
+				"kind": "basic",
+				"spec": [{"name": "critical", "target": 0, "matchType": "1", "op": "1", "channels": ["Webhook"]}]
+			}
+		},
+		"version": "v5",
+		"evaluation": {"kind": "rolling", "spec": {"evalWindow": "5m0s", "frequency": "1m"}},
+		"schemaVersion": "v2alpha1",
+		"notificationSettings": {"renotify": {"enabled": true, "interval": "30m", "alertStates": ["firing"]}}
+	}`
+
+	apiResponse := `{
+		"condition": {
+			"compositeQuery": {
+				"queries": [{
+					"type": "builder_query",
+					"spec": {
+						"name": "A",
+						"signal": "metrics",
+						"aggregations": [{"metricName": "k8s.pod.phase", "timeAggregation": "latest", "spaceAggregation": "avg"}],
+						"filter": {"expression": ""},
+						"groupBy": [{"name": "k8s.pod.name", "fieldContext": "attribute", "signal": ""}]
+					}
+				}],
+				"panelType": "graph",
+				"queryType": "builder"
+			},
+			"selectedQueryName": "A",
+			"thresholds": {
+				"kind": "basic",
+				"spec": [{"name": "critical", "target": 0, "matchType": "1", "op": "1", "channels": ["Webhook"]}]
+			}
+		},
+		"version": "v5",
+		"evaluation": {"kind": "rolling", "spec": {"evalWindow": "5m0s", "frequency": "1m"}},
+		"schemaVersion": "v2alpha1",
+		"notificationSettings": {"renotify": {"enabled": true, "interval": "30m", "alertStates": ["firing"]}}
+	}`
+
+	configNorm, err := client.NormalizeRuleSpecJSON(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	apiNorm, err := client.NormalizeRuleSpecJSON(apiResponse)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if configNorm != apiNorm {
+		t.Fatalf("normalized config and API response differ:\nconfig: %s\napi:    %s", configNorm, apiNorm)
+	}
+}
+
 func TestRuleSpecFromMap(t *testing.T) {
 	t.Parallel()
 
