@@ -203,6 +203,13 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if s, ok := val.(string); ok && s == "" {
 					delete(t, k)
 				}
+			case "signal":
+				// Remove empty signal on groupBy entries (zero value default the
+				// API echoes back); the query-spec-level signal (logs/metrics/
+				// traces) is never empty in practice, so this is safe at any depth.
+				if s, ok := val.(string); ok && s == "" {
+					delete(t, k)
+				}
 			case "disabled", "usePolicy":
 				// Remove disabled:false / usePolicy:false — the API omits these
 				// defaults on read.
