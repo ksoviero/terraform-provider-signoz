@@ -198,13 +198,14 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if isZeroNumber(val) {
 					delete(t, k)
 				}
-			case "reduceTo", "temporality":
-				// Remove empty aggregation defaults injected by the UI/API.
+			case "reduceTo", "temporality", "legend":
+				// Remove empty aggregation/query-spec defaults injected by the UI/API.
 				if s, ok := val.(string); ok && s == "" {
 					delete(t, k)
 				}
-			case "disabled":
-				// Remove disabled:false — the API omits this default on read.
+			case "disabled", "usePolicy":
+				// Remove disabled:false / usePolicy:false — the API omits these
+				// defaults on read.
 				if b, ok := val.(bool); ok && !b {
 					delete(t, k)
 				}
