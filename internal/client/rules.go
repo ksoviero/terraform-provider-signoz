@@ -233,6 +233,20 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if s, ok := val.(string); ok && s == "" {
 					delete(t, k)
 				}
+			case "functions":
+				// The API stores query function names in lower case
+				// (cumulativeSum -> cumulativesum, clampMax -> clampmax) and
+				// accepts either, so compare them in lower case.
+				if fns, ok := val.([]interface{}); ok {
+					for _, fn := range fns {
+						if m, ok := fn.(map[string]interface{}); ok {
+							if name, ok := m["name"].(string); ok {
+								m["name"] = strings.ToLower(name)
+							}
+						}
+					}
+				}
+				t[k] = normalizeRuleSpec(val)
 			case "expression":
 				// Normalize filter expressions
 				if s, ok := val.(string); ok {

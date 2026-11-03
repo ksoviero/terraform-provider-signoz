@@ -448,6 +448,52 @@ func TestNormalizeRuleSpecJSON_groupByEmptySignal(t *testing.T) {
 	}
 }
 
+func TestNormalizeRuleSpecJSON_functionNameCase(t *testing.T) {
+	t.Parallel()
+
+	// Config names functions in camelCase; the API echoes them back in lower case.
+	spec := func(cumulativeSum, clampMax string) string {
+		return `{
+		"condition": {
+			"compositeQuery": {
+				"queries": [{
+					"type": "builder_query",
+					"spec": {
+						"name": "A",
+						"signal": "metrics",
+						"aggregations": [{"metricName": "signoz.meter.log.size", "timeAggregation": "rate", "spaceAggregation": "sum"}],
+						"functions": [{"name": "` + clampMax + `", "args": [{"value": 1}]}, {"name": "` + cumulativeSum + `"}]
+					}
+				}],
+				"panelType": "graph",
+				"queryType": "builder"
+			},
+			"selectedQueryName": "A",
+			"thresholds": {
+				"kind": "basic",
+				"spec": [{"name": "critical", "target": 44.1, "matchType": "5", "op": "1", "channels": ["Webhook"]}]
+			}
+		},
+		"version": "v5",
+		"evaluation": {"kind": "rolling", "spec": {"evalWindow": "5m0s", "frequency": "1m"}},
+		"schemaVersion": "v2alpha1",
+		"notificationSettings": {"renotify": {"enabled": true, "interval": "30m", "alertStates": ["firing"]}}
+	}`
+	}
+
+	configNorm, err := client.NormalizeRuleSpecJSON(spec("cumulativeSum", "clampMax"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	apiNorm, err := client.NormalizeRuleSpecJSON(spec("cumulativesum", "clampmax"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if configNorm != apiNorm {
+		t.Fatalf("normalized config and API response differ:\nconfig: %s\napi:    %s", configNorm, apiNorm)
+	}
+}
+
 func TestRuleSpecFromMap(t *testing.T) {
 	t.Parallel()
 
