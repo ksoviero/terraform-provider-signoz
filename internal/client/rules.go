@@ -312,22 +312,29 @@ var ruleTopLevelFields = []string{
 // ruleSpecMap returns a deep copy of a rule without the fields that have attributes of their
 // own. Deep, as RuleSpecFromMap tidies the copy in place and the raw spec is taken from the same
 // rule.
-func ruleSpecMap(full map[string]interface{}) map[string]interface{} {
-	var copy map[string]interface{}
+func ruleSpecMap(full map[string]interface{}) (map[string]interface{}, error) {
 	b, err := json.Marshal(full)
-	if err != nil || json.Unmarshal(b, &copy) != nil || copy == nil {
-		copy = map[string]interface{}{}
+	if err != nil {
+		return nil, err
+	}
+	copy := map[string]interface{}{}
+	if err := json.Unmarshal(b, &copy); err != nil {
+		return nil, err
 	}
 	for _, k := range ruleTopLevelFields {
 		delete(copy, k)
 	}
-	return copy
+	return copy, nil
 }
 
 // RawRuleSpecFromMap returns the spec part of a rule as the API returned it, nothing pruned: what
 // a resource's spec is compared with (ShapeLike).
 func RawRuleSpecFromMap(full map[string]interface{}) (string, error) {
-	b, err := json.Marshal(ruleSpecMap(full))
+	spec, err := ruleSpecMap(full)
+	if err != nil {
+		return "", err
+	}
+	b, err := json.Marshal(spec)
 	if err != nil {
 		return "", err
 	}
@@ -338,7 +345,10 @@ func RawRuleSpecFromMap(full map[string]interface{}) (string, error) {
 // fields), tidied of the API's defaults: for imports and data sources. Resources compare their
 // spec with RawRuleSpecFromMap instead, so a default this misses never shows as drift there.
 func RuleSpecFromMap(full map[string]interface{}) (string, error) {
-	copy := ruleSpecMap(full)
+	copy, err := ruleSpecMap(full)
+	if err != nil {
+		return "", err
+	}
 
 	// The API echoes evalWindow/frequency at the top level as duplicates of
 	// evaluation.spec values. Strip them only when they match, so users who
