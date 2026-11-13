@@ -182,6 +182,13 @@ func normalizeRuleSpec(v interface{}) interface{} {
 	switch t := v.(type) {
 	case map[string]interface{}:
 		for k, val := range t {
+			// The API writes out every field it has, unset ones as null
+			// (functions, order, secondaryAggregations, selectFields,
+			// recoveryTarget): a null means the same as leaving it out.
+			if val == nil {
+				delete(t, k)
+				continue
+			}
 			switch k {
 			case "source":
 				// Remove empty source (zero value, not meaningful)
@@ -193,12 +200,13 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if isZeroNumber(val) {
 					delete(t, k)
 				}
-			case "step":
-				// Remove zero step (default for promql queries)
+			case "step", "absentFor":
+				// Remove zero step (default for promql queries) and zero
+				// absentFor (no nodata alert, the default)
 				if isZeroNumber(val) {
 					delete(t, k)
 				}
-			case "reduceTo", "temporality", "legend":
+			case "reduceTo", "temporality", "legend", "seasonality":
 				// Remove empty aggregation/query-spec defaults injected by the UI/API.
 				if s, ok := val.(string); ok && s == "" {
 					delete(t, k)
@@ -210,9 +218,9 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if s, ok := val.(string); ok && s == "" {
 					delete(t, k)
 				}
-			case "disabled", "usePolicy":
-				// Remove disabled:false / usePolicy:false — the API omits these
-				// defaults on read.
+			case "disabled", "usePolicy", "alertOnAbsent":
+				// Remove disabled:false / usePolicy:false / alertOnAbsent:false,
+				// the defaults.
 				if b, ok := val.(bool); ok && !b {
 					delete(t, k)
 				}
@@ -223,9 +231,9 @@ func normalizeRuleSpec(v interface{}) interface{} {
 						delete(t, k)
 					}
 				}
-			case "recoveryTarget":
-				// Remove null recoveryTarget
-				if val == nil {
+			case "newGroupEvalDelay":
+				// Remove a zero grace period (the API writes it as "0s")
+				if s, ok := val.(string); ok && (s == "" || s == "0s") {
 					delete(t, k)
 				}
 			case "targetUnit":
