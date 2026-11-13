@@ -156,6 +156,7 @@ func (r *DowntimeScheduleResource) Create(ctx context.Context, req resource.Crea
 	}
 	state, diags := modelFromDowntimeScheduleMap(ctx, created)
 	resp.Diagnostics.Append(diags...)
+	state.Schedule = plan.Schedule
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -165,6 +166,7 @@ func (r *DowntimeScheduleResource) Read(ctx context.Context, req resource.ReadRe
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 	m, err := r.client.GetDowntimeSchedule(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("SigNoz API error", err.Error())
@@ -172,6 +174,7 @@ func (r *DowntimeScheduleResource) Read(ctx context.Context, req resource.ReadRe
 	}
 	out, diags := modelFromDowntimeScheduleMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
+	shapeReadJSON(state.Schedule, &out.Schedule, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -198,6 +201,7 @@ func (r *DowntimeScheduleResource) Update(ctx context.Context, req resource.Upda
 	}
 	out, diags := modelFromDowntimeScheduleMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
+	out.Schedule = plan.Schedule
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -214,6 +218,7 @@ func (r *DowntimeScheduleResource) Delete(ctx context.Context, req resource.Dele
 
 func (r *DowntimeScheduleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }
 
 // --- data source (singular) ---

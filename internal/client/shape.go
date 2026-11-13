@@ -1,0 +1,162 @@
+// SPDX-License-Identifier: MPL-2.0
+
+package client
+
+import (
+	"encoding/json"
+	"fmt"
+	"reflect"
+	"strconv"
+	"strings"
+	"time"
+)
+
+// Equivalent reports whether the API's value got means the same as the configured value want, at
+// path (the keys and list indexes leading to it). It's for values the API rewrites, such as query
+// function names it stores in lower case; plain equality is checked first, so it only needs to
+// say yes to the rewrites.
+type Equivalent func(path []string, want, got interface{}) bool
+
+// ShapeLike compares what the API returned (got) with what Terraform last set (want), looking only
+// at the fields want sets, and returns what to keep in state:
+//
+//   - want itself, exactly as given, when every field it sets has the same value in got. Fields
+//     the API adds (its defaults, nulls, echoes) are ignored, so a new one never shows as drift.
+//   - otherwise got reduced to want's fields, with want's own values wherever they still match:
+//     the plan then shows only the fields that really changed.
+//
+// Under a "headers" object, a header the API returns in another case matches when there's no
+// exact one and only one such key.
+//
+// A field want sets to its zero value (false, 0, "", null, [] or {}) that got leaves out, or has
+// as null, counts as the same: the API often omits its defaults. Lists are compared item by
+// item; one of another length is drift, and got's extra items are kept whole. An object want
+// sets to {} matches any object, as it sets none of its fields. An empty want or got keeps got
+// as it is.
+func ShapeLike(want, got string, eq Equivalent) (string, error) {
+	if strings.TrimSpace(want) == "" || strings.TrimSpace(got) == "" {
+		// Nothing in state to compare with, or nothing from the API: the plan shows got as it is
+		return got, nil
+	}
+	var w, g interface{}
+	if err := json.Unmarshal([]byte(want), &w); err != nil {
+		return "", fmt.Errorf("state value isn't valid JSON: %w", err)
+	}
+	if err := json.Unmarshal([]byte(got), &g); err != nil {
+		return "", fmt.Errorf("API value isn't valid JSON: %w", err)
+	}
+	shaped, same := shapeLike(nil, w, g, eq)
+	if same {
+		return want, nil
+	}
+	b, err := json.Marshal(shaped)
+	if err != nil {
+		return "", err
+	}
+	return CanonicalJSON(string(b))
+}
+
+// shapeLike returns got reduced to want's shape, and whether it's the same as want.
+func shapeLike(path []string, want, got interface{}, eq Equivalent) (interface{}, bool) {
+	if got == nil && isZeroJSON(want) {
+		return want, true
+	}
+	switch w := want.(type) {
+	case map[string]interface{}:
+		g, ok := got.(map[string]interface{})
+		if !ok {
+			return got, false
+		}
+		out := make(map[string]interface{}, len(w))
+		same := true
+		for k, wv := range w {
+			gv, present := g[k]
+			if !present && len(path) > 0 && path[len(path)-1] == "headers" {
+				// Header names are case-insensitive, and Alertmanager title-cases email
+				// headers. Anywhere else a key's case matters.
+				gv, present = foldedKey(g, k)
+			}
+			if !present {
+				if isZeroJSON(wv) {
+					out[k] = wv
+				} else {
+					same = false
+				}
+				continue
+			}
+			v, s := shapeLike(append(path[:len(path):len(path)], k), wv, gv, eq)
+			out[k] = v
+			same = same && s
+		}
+		return out, same
+	case []interface{}:
+		g, ok := got.([]interface{})
+		if !ok {
+			return got, false
+		}
+		out := make([]interface{}, len(g))
+		same := len(w) == len(g)
+		for i, gv := range g {
+			if i >= len(w) {
+				out[i] = gv
+				continue
+			}
+			v, s := shapeLike(append(path[:len(path):len(path)], strconv.Itoa(i)), w[i], gv, eq)
+			out[i] = v
+			same = same && s
+		}
+		return out, same
+	default:
+		if reflect.DeepEqual(want, got) || (eq != nil && eq(path, want, got)) {
+			return want, true
+		}
+		return got, false
+	}
+}
+
+// isZeroJSON reports whether v is JSON's zero value of its kind.
+func isZeroJSON(v interface{}) bool {
+	switch t := v.(type) {
+	case nil:
+		return true
+	case bool:
+		return !t
+	case float64:
+		return t == 0
+	case string:
+		return t == ""
+	case []interface{}:
+		return len(t) == 0
+	case map[string]interface{}:
+		return len(t) == 0
+	}
+	return false
+}
+
+// foldedKey finds the value of the one key in m that differs from k only in case; with none, or
+// more than one, it's not found.
+func foldedKey(m map[string]interface{}, k string) (interface{}, bool) {
+	var found interface{}
+	n := 0
+	for mk, v := range m {
+		if strings.EqualFold(mk, k) {
+			found = v
+			n++
+		}
+	}
+	return found, n == 1
+}
+
+// SameDuration is an Equivalent for attributes the API rewrites durations in ("60s" as "1m0s",
+// "24h" as "24h0m0s"): alert rules and notification channels. Not for free-form JSON, where a
+// string that reads as a duration may just be text.
+func SameDuration(_ []string, want, got interface{}) bool {
+	w, ok1 := want.(string)
+	g, ok2 := got.(string)
+	if !ok1 || !ok2 {
+		return false
+	}
+	wd, err1 := time.ParseDuration(w)
+	gd, err2 := time.ParseDuration(g)
+	return err1 == nil && err2 == nil && wd == gd
+}

@@ -161,6 +161,7 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 
 	ch, err := r.client.GetChannel(ctx, state.ID.ValueString())
 	if err != nil {
@@ -168,15 +169,25 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	// Preserve the stored config value rather than re-deriving it from the API.
-	// The SigNoz API injects Alertmanager defaults into the receiver JSON on
-	// read-back; re-normalizing here would cause drift for fields the user
-	// explicitly set to a default value. The config is only updated by plan/apply.
-	out, err := notificationChannelStateAfterWrite(state, ch)
+	// The config in state compared with the API's raw receiver JSON on the fields it sets
+	// only, so the Alertmanager defaults the API adds never show as drift, but a change to
+	// a field the config sets does (shapedForState). On import, the pruned config.
+	out, err := modelFromChannel(ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
+	raw, err := client.ChannelConfigFromData(ch.Data)
+	if err != nil {
+		resp.Diagnostics.AddError("Internal error", err.Error())
+		return
+	}
+	shaped, err := shapedForState(state.Config.StringValue, raw, out.Config.ValueString(), imported, client.SameDuration)
+	if err != nil {
+		resp.Diagnostics.AddError("Internal error", err.Error())
+		return
+	}
+	out.Config = jsontypes.Normalized{StringValue: shaped}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -226,4 +237,5 @@ func (r *NotificationChannelResource) Delete(ctx context.Context, req resource.D
 
 func (r *NotificationChannelResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }

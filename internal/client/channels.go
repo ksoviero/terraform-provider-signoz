@@ -263,11 +263,14 @@ func NormalizeChannelConfigJSON(raw string) (string, error) {
 	if raw == "" {
 		return "", nil
 	}
-	var m map[string]interface{}
-	if err := json.Unmarshal([]byte(raw), &m); err != nil {
-		return "", fmt.Errorf("channel config must be valid JSON: %w", err)
+	cfg, err := ChannelConfigFromData(raw)
+	if err != nil {
+		return "", err
 	}
-	delete(m, "name")
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(cfg), &m); err != nil {
+		return "", err
+	}
 	pruneChannelConfigMap(m)
 	b, err := json.Marshal(m)
 	if err != nil {
@@ -284,4 +287,23 @@ func MergeChannelBody(name string, configJSON string) (map[string]interface{}, e
 	}
 	m["name"] = name
 	return m, nil
+}
+
+// ChannelConfigFromData returns the receiver configuration the API returned, with only its
+// top-level "name" removed: what a resource's config is compared with (ShapeLike), defaults and
+// all.
+func ChannelConfigFromData(raw string) (string, error) {
+	if raw == "" {
+		return "", nil
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return "", fmt.Errorf("channel config must be valid JSON: %w", err)
+	}
+	delete(m, "name")
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	return CanonicalJSON(string(b))
 }

@@ -59,7 +59,7 @@ func (d *NotificationChannelDataSource) Schema(_ context.Context, _ datasource.S
 				Optional:            true,
 			},
 			"config": dataschema.StringAttribute{
-				MarkdownDescription: docChannelConfig,
+				MarkdownDescription: docChannelConfigDataSource,
 				CustomType:          jsontypes.NormalizedType{},
 				Computed:            true,
 				Sensitive:           true,

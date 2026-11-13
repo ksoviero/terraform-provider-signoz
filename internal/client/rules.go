@@ -182,6 +182,13 @@ func normalizeRuleSpec(v interface{}) interface{} {
 	switch t := v.(type) {
 	case map[string]interface{}:
 		for k, val := range t {
+			// The API writes out every field it has, unset ones as null
+			// (functions, order, secondaryAggregations, selectFields,
+			// recoveryTarget): a null means the same as leaving it out.
+			if val == nil {
+				delete(t, k)
+				continue
+			}
 			switch k {
 			case "source":
 				// Remove empty source (zero value, not meaningful)
@@ -193,12 +200,13 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if isZeroNumber(val) {
 					delete(t, k)
 				}
-			case "step":
-				// Remove zero step (default for promql queries)
+			case "step", "absentFor":
+				// Remove zero step (default for promql queries) and zero
+				// absentFor (no nodata alert, the default)
 				if isZeroNumber(val) {
 					delete(t, k)
 				}
-			case "reduceTo", "temporality", "legend":
+			case "reduceTo", "temporality", "legend", "seasonality":
 				// Remove empty aggregation/query-spec defaults injected by the UI/API.
 				if s, ok := val.(string); ok && s == "" {
 					delete(t, k)
@@ -210,9 +218,9 @@ func normalizeRuleSpec(v interface{}) interface{} {
 				if s, ok := val.(string); ok && s == "" {
 					delete(t, k)
 				}
-			case "disabled", "usePolicy":
-				// Remove disabled:false / usePolicy:false — the API omits these
-				// defaults on read.
+			case "disabled", "usePolicy", "alertOnAbsent":
+				// Remove disabled:false / usePolicy:false / alertOnAbsent:false,
+				// the defaults.
 				if b, ok := val.(bool); ok && !b {
 					delete(t, k)
 				}
@@ -223,9 +231,9 @@ func normalizeRuleSpec(v interface{}) interface{} {
 						delete(t, k)
 					}
 				}
-			case "recoveryTarget":
-				// Remove null recoveryTarget
-				if val == nil {
+			case "newGroupEvalDelay":
+				// Remove a zero grace period (the API writes it as "0s")
+				if s, ok := val.(string); ok && (s == "" || s == "0s") {
 					delete(t, k)
 				}
 			case "targetUnit":
@@ -295,17 +303,51 @@ func NormalizeRuleSpecJSON(raw string) (string, error) {
 	return CanonicalJSON(string(b))
 }
 
-// RuleSpecFromMap returns JSON for attributes stored in spec (everything except top-level fields).
-func RuleSpecFromMap(full map[string]interface{}) (string, error) {
-	copy := make(map[string]interface{}, len(full))
-	for k, v := range full {
-		copy[k] = v
+// ruleTopLevelFields are a rule's fields that have attributes of their own, outside spec.
+var ruleTopLevelFields = []string{
+	"id", "state", "alert", "alertType", "description", "ruleType", "disabled",
+	"labels", "annotations", "createdAt", "updatedAt", "createdBy", "updatedBy",
+}
+
+// ruleSpecMap returns a deep copy of a rule without the fields that have attributes of their
+// own. Deep, as RuleSpecFromMap tidies the copy in place and the raw spec is taken from the same
+// rule.
+func ruleSpecMap(full map[string]interface{}) (map[string]interface{}, error) {
+	b, err := json.Marshal(full)
+	if err != nil {
+		return nil, err
 	}
-	for _, k := range []string{
-		"id", "state", "alert", "alertType", "description", "ruleType", "disabled",
-		"labels", "annotations", "createdAt", "updatedAt", "createdBy", "updatedBy",
-	} {
+	copy := map[string]interface{}{}
+	if err := json.Unmarshal(b, &copy); err != nil {
+		return nil, err
+	}
+	for _, k := range ruleTopLevelFields {
 		delete(copy, k)
+	}
+	return copy, nil
+}
+
+// RawRuleSpecFromMap returns the spec part of a rule as the API returned it, nothing pruned: what
+// a resource's spec is compared with (ShapeLike).
+func RawRuleSpecFromMap(full map[string]interface{}) (string, error) {
+	spec, err := ruleSpecMap(full)
+	if err != nil {
+		return "", err
+	}
+	b, err := json.Marshal(spec)
+	if err != nil {
+		return "", err
+	}
+	return CanonicalJSON(string(b))
+}
+
+// RuleSpecFromMap returns JSON for attributes stored in spec (everything except top-level
+// fields), tidied of the API's defaults: for imports and data sources. Resources compare their
+// spec with RawRuleSpecFromMap instead, so a default this misses never shows as drift there.
+func RuleSpecFromMap(full map[string]interface{}) (string, error) {
+	copy, err := ruleSpecMap(full)
+	if err != nil {
+		return "", err
 	}
 
 	// The API echoes evalWindow/frequency at the top level as duplicates of
@@ -328,4 +370,49 @@ func stripTopLevelDuplicates(spec map[string]interface{}) {
 	for _, k := range []string{"evalWindow", "frequency"} {
 		delete(spec, k)
 	}
+}
+
+// RuleValuesEquivalent is the Equivalent for alert rule specs: the values the API rewrites. It
+// stores query function names in lower case (cumulativeSum as cumulativesum), respaces the lists
+// in filter expressions, and writes durations Go-style (SameDuration).
+func RuleValuesEquivalent(path []string, want, got interface{}) bool {
+	if SameDuration(path, want, got) {
+		return true
+	}
+	w, ok1 := want.(string)
+	g, ok2 := got.(string)
+	if !ok1 || !ok2 || len(path) == 0 {
+		return false
+	}
+	switch last := path[len(path)-1]; {
+	case last == "name" && len(path) >= 3 && path[len(path)-3] == "functions":
+		return strings.EqualFold(w, g)
+	case last == "expression":
+		return normalizeFilterExpression(w) == normalizeFilterExpression(g)
+	}
+	return false
+}
+
+// WithoutRuleEchoes returns a rule spec without the top-level evalWindow and frequency, which
+// the API echoes from evaluation.spec whatever was sent (stripTopLevelDuplicates): Read compares
+// specs without them on both sides, as the plan does.
+func WithoutRuleEchoes(spec string) (string, error) {
+	if strings.TrimSpace(spec) == "" {
+		return spec, nil
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(spec), &m); err != nil {
+		return "", err
+	}
+	if _, ok := m["evalWindow"]; !ok {
+		if _, ok := m["frequency"]; !ok {
+			return spec, nil
+		}
+	}
+	stripTopLevelDuplicates(m)
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	return CanonicalJSON(string(b))
 }

@@ -4,6 +4,7 @@ package client_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -491,6 +492,96 @@ func TestNormalizeRuleSpecJSON_functionNameCase(t *testing.T) {
 	}
 	if configNorm != apiNorm {
 		t.Fatalf("normalized config and API response differ:\nconfig: %s\napi:    %s", configNorm, apiNorm)
+	}
+}
+
+func TestNormalizeRuleSpecJSON_nullsAndEvaluationDefaults(t *testing.T) {
+	t.Parallel()
+
+	// The config leaves unset fields out; the API (as of November 2026) writes
+	// them all back: unset ones as null, and its defaults for nodata alerts,
+	// seasonality and the new group grace period.
+	config := `{
+		"condition": {
+			"compositeQuery": {
+				"queries": [{
+					"type": "builder_query",
+					"spec": {
+						"name": "A",
+						"signal": "metrics",
+						"aggregations": [{"metricName": "signoz.meter.log.size", "timeAggregation": "rate", "spaceAggregation": "sum"}],
+						"groupBy": []
+					}
+				}],
+				"panelType": "graph",
+				"queryType": "builder"
+			},
+			"selectedQueryName": "A",
+			"thresholds": {"kind": "basic", "spec": [{"name": "critical", "target": 44.1, "matchType": "3", "op": "1", "channels": ["Cliq"]}]}
+		},
+		"version": "v5",
+		"evaluation": {"kind": "rolling", "spec": {"evalWindow": "24h0m0s", "frequency": "1m"}},
+		"schemaVersion": "v2alpha1",
+		"notificationSettings": {"groupBy": [], "renotify": {"enabled": true, "interval": "30m", "alertStates": ["firing"]}}
+	}`
+	api := `{
+		"condition": {
+			"absentFor": 0,
+			"alertOnAbsent": false,
+			"compositeQuery": {
+				"queries": [{
+					"type": "builder_query",
+					"spec": {
+						"name": "A",
+						"signal": "metrics",
+						"aggregations": [{"metricName": "signoz.meter.log.size", "timeAggregation": "rate", "spaceAggregation": "sum", "reduceTo": "", "temporality": ""}],
+						"functions": null,
+						"groupBy": [],
+						"legend": "",
+						"order": null,
+						"secondaryAggregations": null,
+						"selectFields": null
+					}
+				}],
+				"panelType": "graph",
+				"queryType": "builder"
+			},
+			"seasonality": "",
+			"selectedQueryName": "A",
+			"thresholds": {"kind": "basic", "spec": [{"name": "critical", "target": 44.1, "matchType": "3", "op": "1", "channels": ["Cliq"], "recoveryTarget": null, "targetUnit": ""}]}
+		},
+		"version": "v5",
+		"evaluation": {"kind": "rolling", "spec": {"evalWindow": "24h0m0s", "frequency": "1m"}},
+		"schemaVersion": "v2alpha1",
+		"notificationSettings": {"groupBy": [], "newGroupEvalDelay": "0s", "usePolicy": false, "renotify": {"enabled": true, "interval": "30m", "alertStates": ["firing"]}}
+	}`
+
+	configNorm, err := client.NormalizeRuleSpecJSON(config)
+	if err != nil {
+		t.Fatal(err)
+	}
+	apiNorm, err := client.NormalizeRuleSpecJSON(api)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if configNorm != apiNorm {
+		t.Fatalf("normalized config and API response differ:\nconfig: %s\napi:    %s", configNorm, apiNorm)
+	}
+
+	// Values that aren't the defaults still count
+	for from, to := range map[string]string{
+		`"absentFor": 0`:            `"absentFor": 10`,
+		`"alertOnAbsent": false`:    `"alertOnAbsent": true`,
+		`"seasonality": ""`:         `"seasonality": "daily"`,
+		`"newGroupEvalDelay": "0s"`: `"newGroupEvalDelay": "2m"`,
+	} {
+		changed, err := client.NormalizeRuleSpecJSON(strings.Replace(api, from, to, 1))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if changed == apiNorm {
+			t.Errorf("%s was dropped as a default", to)
+		}
 	}
 }
 
