@@ -110,7 +110,7 @@ func (r *AuthDomainResource) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	state.Config = plan.Config
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -132,6 +132,7 @@ func (r *AuthDomainResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 	shapeReadJSON(state.Config, &out.Config, imported, &resp.Diagnostics)
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -161,7 +162,7 @@ func (r *AuthDomainResource) Update(ctx context.Context, req resource.UpdateRequ
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	out.Config = plan.Config
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

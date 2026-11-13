@@ -10,9 +10,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -54,7 +55,10 @@ func (r *DashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				MarkdownDescription: docDashboardLocked,
 				Optional:            true,
 				Computed:            true,
-				Default:             booldefault.StaticBool(false),
+				// SigNoz's value when the configuration leaves it out, so a dashboard locked in
+				// the UI stays locked rather than showing true -> false on every plan
+				PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+				Validators:    []validator.Bool{lockedNotSupported{}},
 			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
@@ -63,12 +67,10 @@ func (r *DashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			// Not kept in the plan: nothing says an update leaves it as it is
 			"source": schema.StringAttribute{
 				MarkdownDescription: docDashboardSource,
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: docCreatedAt,
@@ -149,7 +151,7 @@ func (r *DashboardResource) Create(ctx context.Context, req resource.CreateReque
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	state.Data = plan.Data
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -173,6 +175,7 @@ func (r *DashboardResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	shapeReadJSON(state.Data, &out.Data, imported, &resp.Diagnostics)
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -201,7 +204,7 @@ func (r *DashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	out.Data = plan.Data
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -219,4 +222,24 @@ func (r *DashboardResource) Delete(ctx context.Context, req resource.DeleteReque
 func (r *DashboardResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 	markImported(ctx, resp)
+}
+
+// lockedNotSupported rejects locked = true: the dashboard API this provider uses (v1) doesn't take
+// it, so it was never sent, and the plan would show it on every run. SigNoz locks dashboards with
+// its v2 API's /lock, which rejects updates while locked.
+type lockedNotSupported struct{}
+
+func (lockedNotSupported) Description(context.Context) string {
+	return "locked = true isn't supported yet."
+}
+
+func (v lockedNotSupported) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (lockedNotSupported) ValidateBool(_ context.Context, req validator.BoolRequest, resp *validator.BoolResponse) {
+	if !req.ConfigValue.IsNull() && !req.ConfigValue.IsUnknown() && req.ConfigValue.ValueBool() {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid configuration",
+			"This provider can't lock a dashboard yet: the dashboard API it uses doesn't take locked, so it would never be sent. Lock the dashboard in SigNoz's UI and leave locked out of the configuration: it then follows SigNoz's.")
+	}
 }

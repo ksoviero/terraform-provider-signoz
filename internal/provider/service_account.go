@@ -72,7 +72,8 @@ func (r *ServiceAccountResource) Schema(_ context.Context, _ resource.SchemaRequ
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"email":      schema.StringAttribute{MarkdownDescription: docServiceAccountEmail, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			// Not kept in the plan: an update renames the account, which may change it
+			"email":      schema.StringAttribute{MarkdownDescription: docServiceAccountEmail, Computed: true},
 			"org_id":     schema.StringAttribute{MarkdownDescription: docOrgID, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"created_at": schema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"updated_at": schema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},
@@ -96,6 +97,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 	state := modelFromServiceAccountMap(created)
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -105,12 +107,14 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 	m, err := r.client.GetServiceAccount(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("SigNoz API error", err.Error())
 		return
 	}
 	out := modelFromServiceAccountMap(m)
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -131,6 +135,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 	out := modelFromServiceAccountMap(m)
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -147,6 +152,7 @@ func (r *ServiceAccountResource) Delete(ctx context.Context, req resource.Delete
 
 func (r *ServiceAccountResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }
 
 var _ datasource.DataSource = &ServiceAccountDataSource{}

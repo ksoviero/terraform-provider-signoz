@@ -37,7 +37,7 @@ output "service_overview_title" {
 - `created_at` (String) RFC3339 timestamp when the object was created. Read-only.
 - `created_by` (String) Identifier of the user or service that created the object. Read-only.
 - `data` (String) Dashboard JSON document (`PostableDashboard` / `UpdatableDashboard`). Typically includes `title`, `description`, `tags`, `layout`, `widgets`, and `version` (often `v5` for current SigNoz layouts).
-- `locked` (Boolean) Whether the dashboard is locked in the UI. Default: `false`.
+- `locked` (Boolean) Whether the dashboard is locked in the UI (a locked dashboard rejects updates).
 - `source` (String) Dashboard source identifier from the API (e.g. how the dashboard was created). Read-only.
 - `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.
 - `updated_by` (String) Identifier of the user or service that last updated the object. Read-only.

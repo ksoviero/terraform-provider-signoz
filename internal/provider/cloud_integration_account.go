@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -89,7 +90,7 @@ func (r *CloudIntegrationAccountResource) Schema(_ context.Context, _ resource.S
 				},
 			},
 			"config":      normalizedJSONAttribute(docCloudConfig, true),
-			"credentials": normalizedJSONOptionalWithUnknown(docCloudCredentials, true),
+			"credentials": credentialsAttribute(),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,
@@ -102,12 +103,10 @@ func (r *CloudIntegrationAccountResource) Schema(_ context.Context, _ resource.S
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
+			// Not kept in the plan: the agent's check-in sets it after create
 			"provider_account_id": schema.StringAttribute{
 				MarkdownDescription: docCloudProviderAccountID,
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"org_id":     schema.StringAttribute{MarkdownDescription: docOrgID, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"created_at": schema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
@@ -145,8 +144,7 @@ func (r *CloudIntegrationAccountResource) Create(ctx context.Context, req resour
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	state.Credentials = plan.Credentials
-	state.Config = plan.Config
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -169,6 +167,7 @@ func (r *CloudIntegrationAccountResource) Read(ctx context.Context, req resource
 	}
 	out.Credentials = state.Credentials
 	shapeReadJSON(state.Config, &out.Config, imported, &resp.Diagnostics)
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -177,6 +176,9 @@ func (r *CloudIntegrationAccountResource) Update(ctx context.Context, req resour
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() || r.client == nil {
+		return
+	}
+	if !credentialsUnsent(plan.Credentials, state.Credentials, &resp.Diagnostics) {
 		return
 	}
 	body, err := client.BuildCloudAccountUpdateBody(plan.Config.ValueString())
@@ -198,8 +200,7 @@ func (r *CloudIntegrationAccountResource) Update(ctx context.Context, req resour
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	out.Credentials = state.Credentials
-	out.Config = plan.Config
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -361,4 +362,58 @@ func (d *CloudIntegrationAccountsDataSource) Read(ctx context.Context, req datas
 		CloudProvider: config.CloudProvider,
 		Accounts:      accounts,
 	})...)
+}
+
+// credentialsAttribute is a cloud account's credentials: SigNoz takes them only on create (its
+// update has config alone), so a change to them replaces the account. Left out of the
+// configuration after create, they're just forgotten.
+func credentialsAttribute() schema.StringAttribute {
+	a := normalizedJSONOptionalWithUnknown(docCloudCredentials, true)
+	a.PlanModifiers = append(a.PlanModifiers, stringplanmodifier.RequiresReplaceIf(
+		func(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+			if req.PlanValue.IsNull() || req.StateValue.IsNull() {
+				return
+			}
+			// Known only after apply (say, from another resource being updated), they're
+			// most often the same: Update checks them once known, rather than recreating
+			// the account for a value that may not change
+			if req.PlanValue.IsUnknown() {
+				return
+			}
+			resp.RequiresReplace = !sameCredentials(req.PlanValue.ValueString(), req.StateValue.ValueString())
+		},
+		"Changing credentials replaces the account: SigNoz takes them only on create.",
+		"Changing `credentials` replaces the account: SigNoz takes them only on create.",
+	))
+	return a
+}
+
+// credentialsUnsent checks the credentials an Update has, which SigNoz can't take (only on
+// create): the same as in state is fine; new ones where state has none (after an import, or
+// once taken out of the configuration) are
+// recorded with a warning that they weren't sent; different ones, known only now (the plan had
+// them unknown), are an error, as they'd need the account replaced. False stops the Update.
+func credentialsUnsent(planned, prior jsontypes.Normalized, diags *diag.Diagnostics) bool {
+	if planned.IsNull() {
+		return true
+	}
+	if prior.IsNull() {
+		diags.AddAttributeWarning(path.Root("credentials"), "Credentials not sent",
+			"SigNoz takes a cloud account's credentials only on create, and state had none (after an import, or with them taken out of the configuration), so these are recorded in state but weren't sent. To use them, replace the account (terraform apply -replace).")
+		return true
+	}
+	if sameCredentials(planned.ValueString(), prior.ValueString()) {
+		return true
+	}
+	diags.AddAttributeError(path.Root("credentials"), "Invalid configuration",
+		"The credentials changed, but SigNoz takes a cloud account's credentials only on create. Replace the account to use them (terraform apply -replace).")
+	return false
+}
+
+// sameCredentials reports whether two credentials values are the same JSON, however written
+// (reindented, jsonencode); invalid JSON is never the same.
+func sameCredentials(a, b string) bool {
+	ca, err1 := client.CanonicalJSON(a)
+	cb, err2 := client.CanonicalJSON(b)
+	return err1 == nil && err2 == nil && ca == cb
 }

@@ -151,15 +151,14 @@ func newNormalizedJSON(value string) jsontypes.Normalized {
 }
 
 // normalizedJSONComputedSensitive is computed JSON with semantic equality (for API payloads).
+// Without UseStateForUnknown: the API's payload changes when the resource does, so it's "known
+// after apply" on any change, and the old one isn't promised in the plan (issue #17).
 func normalizedJSONComputedSensitive(markdown string) schema.StringAttribute {
 	return schema.StringAttribute{
 		MarkdownDescription: markdown,
 		CustomType:          jsontypes.NormalizedType{},
 		Computed:            true,
 		Sensitive:           true,
-		PlanModifiers: []planmodifier.String{
-			stringplanmodifier.UseStateForUnknown(),
-		},
 	}
 }
 

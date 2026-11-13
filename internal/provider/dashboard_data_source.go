@@ -47,7 +47,7 @@ func (d *DashboardDataSource) Schema(_ context.Context, _ datasource.SchemaReque
 				Required:            true,
 			},
 			"data":       dataschema.StringAttribute{MarkdownDescription: docDashboardData, Computed: true},
-			"locked":     dataschema.BoolAttribute{MarkdownDescription: docDashboardLocked, Computed: true},
+			"locked":     dataschema.BoolAttribute{MarkdownDescription: docDashboardLockedDataSource, Computed: true},
 			"source":     dataschema.StringAttribute{MarkdownDescription: docDashboardSource, Computed: true},
 			"created_at": dataschema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true},
 			"updated_at": dataschema.StringAttribute{MarkdownDescription: docUpdatedAt, Computed: true},

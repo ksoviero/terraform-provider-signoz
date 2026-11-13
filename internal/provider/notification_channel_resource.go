@@ -4,7 +4,10 @@ package provider
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -63,7 +66,7 @@ func (r *NotificationChannelResource) Schema(_ context.Context, _ resource.Schem
 				MarkdownDescription: docChannelType,
 				Computed:            true,
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
+					sameReceiverKindKeepsType{},
 				},
 			},
 			"data": normalizedJSONComputedSensitive(docChannelData),
@@ -114,20 +117,6 @@ func modelFromChannel(ch *client.Channel) (notificationChannelModel, error) {
 	}, nil
 }
 
-// notificationChannelStateAfterWrite builds state from the API but keeps the planned
-// config value unchanged. SigNoz may canonicalize or mutate receiver JSON on readback;
-// re-normalizing plan config here breaks Terraform sensitive-attribute apply checks.
-func notificationChannelStateAfterWrite(plan notificationChannelModel, ch *client.Channel) (notificationChannelModel, error) {
-	out, err := modelFromChannel(ch)
-	if err != nil {
-		return notificationChannelModel{}, err
-	}
-	if !plan.Config.IsNull() && !plan.Config.IsUnknown() {
-		out.Config = plan.Config
-	}
-	return out, nil
-}
-
 func (r *NotificationChannelResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan notificationChannelModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -147,11 +136,12 @@ func (r *NotificationChannelResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	state, err := notificationChannelStateAfterWrite(plan, ch)
+	state, err := modelFromChannel(ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -188,6 +178,7 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 	out.Config = jsontypes.Normalized{StringValue: shaped}
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -216,11 +207,12 @@ func (r *NotificationChannelResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	out, err := notificationChannelStateAfterWrite(plan, ch)
+	out, err := modelFromChannel(ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -238,4 +230,50 @@ func (r *NotificationChannelResource) Delete(ctx context.Context, req resource.D
 func (r *NotificationChannelResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 	markImported(ctx, resp)
+}
+
+// sameReceiverKindKeepsType plans a channel's type as it is unless the config's receiver kind
+// (its *_configs key) changes, when it's "known after apply" (issue #17): the API derives the
+// type from the kind, so promising the old one for a new kind failed the apply.
+type sameReceiverKindKeepsType struct{}
+
+func (sameReceiverKindKeepsType) Description(context.Context) string {
+	return "Keeps the type in the plan unless the receiver kind (the *_configs key) changes."
+}
+
+func (m sameReceiverKindKeepsType) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (sameReceiverKindKeepsType) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.StateValue.IsNull() || !req.PlanValue.IsUnknown() {
+		return
+	}
+	var planned, prior jsontypes.Normalized
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("config"), &planned)...)
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("config"), &prior)...)
+	if resp.Diagnostics.HasError() || planned.IsUnknown() || planned.IsNull() || prior.IsNull() {
+		return
+	}
+	// With no kind to compare, it stays unknown
+	if kinds := receiverKinds(planned.ValueString()); kinds != "" && kinds == receiverKinds(prior.ValueString()) {
+		resp.PlanValue = req.StateValue
+	}
+}
+
+// receiverKinds lists a receiver config's *_configs keys, sorted: "" if there are none or it
+// isn't JSON.
+func receiverKinds(config string) string {
+	var m map[string]interface{}
+	if json.Unmarshal([]byte(config), &m) != nil {
+		return ""
+	}
+	var kinds []string
+	for k := range m {
+		if strings.HasSuffix(k, "_configs") {
+			kinds = append(kinds, k)
+		}
+	}
+	sort.Strings(kinds)
+	return strings.Join(kinds, ",")
 }

@@ -21,7 +21,7 @@ Manages a SigNoz dashboard (`/api/v1/dashboards`). `data` is the full dashboard 
 
 ### Optional
 
-- `locked` (Boolean) Whether the dashboard is locked in the UI. Default: `false`.
+- `locked` (Boolean) Whether the dashboard is locked in the UI. Default: SigNoz's value (`false` for a new dashboard). Only `false` can be set for now: the dashboard API this provider uses doesn't take it, so `true` is rejected. Lock the dashboard in SigNoz's UI and leave `locked` out of the configuration, and it follows SigNoz's; while it's locked, SigNoz rejects updates to it.
 
 ### Read-Only
 
