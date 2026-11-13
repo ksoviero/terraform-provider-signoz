@@ -373,9 +373,12 @@ func stripTopLevelDuplicates(spec map[string]interface{}) {
 }
 
 // RuleValuesEquivalent is the Equivalent for alert rule specs: the values the API rewrites. It
-// stores query function names in lower case (cumulativeSum as cumulativesum) and respaces the
-// lists in filter expressions.
+// stores query function names in lower case (cumulativeSum as cumulativesum), respaces the lists
+// in filter expressions, and writes durations Go-style (SameDuration).
 func RuleValuesEquivalent(path []string, want, got interface{}) bool {
+	if SameDuration(path, want, got) {
+		return true
+	}
 	w, ok1 := want.(string)
 	g, ok2 := got.(string)
 	if !ok1 || !ok2 || len(path) == 0 {

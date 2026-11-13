@@ -19,7 +19,7 @@ Highlights include multi-signal alert rules (metrics, logs, traces), SAML/OIDC/G
 
 The JSON attributes (`signoz_alert_rule.spec`, `signoz_notification_channel.config`, `signoz_dashboard.data`, `signoz_saved_view.composite_query`, `signoz_downtime_schedule.schedule`, `signoz_auth_domain.config`, `signoz_cloud_integration_account.config`) keep what you configured in state, and a refresh compares SigNoz's copy with it **on the fields you set only**:
 
-- Fields SigNoz adds (its defaults, `null`s for what's unset, fields from a newer SigNoz) never show as changes, nor do durations it rewrites (`60s` as `1m0s`) or keys it returns in another case (email headers).
+- Fields SigNoz adds (its defaults, `null`s for what's unset, fields from a newer SigNoz) never show as changes, nor do durations it rewrites in alert rules and notification channels (`60s` as `1m0s`) or a key it returns in another case (email headers).
 - A field you set that's changed in SigNoz (in its UI, say) shows as a change, and the next apply puts it back. So does a field you set that SigNoz no longer has, unless you set it to a zero value (`false`, `0`, `""`, `null`, `[]`, `{}`), which SigNoz often leaves out.
 - A field you take out of your config is updated away: the whole value is sent on every update.
 - A change in SigNoz to a field you don't set isn't shown; the next update for any reason resets it. An object you set to `{}` sets none of its fields, so it matches whatever SigNoz has there; a list you set to `[]` doesn't (a list's items are compared one by one, and an added one shows).

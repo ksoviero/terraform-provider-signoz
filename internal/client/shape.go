@@ -25,8 +25,7 @@ type Equivalent func(path []string, want, got interface{}) bool
 //   - otherwise got reduced to want's fields, with want's own values wherever they still match:
 //     the plan then shows only the fields that really changed.
 //
-// Durations written two ways ("60s" and "1m0s") are the same, and a key the API returns in
-// another case matches when there's no exact one.
+// A key the API returns in another case matches when there's no exact one and only one such key.
 //
 // A field want sets to its zero value (false, 0, "", null, [] or {}) that got leaves out, or has
 // as null, counts as the same: the API often omits its defaults. Lists are compared item by
@@ -106,7 +105,7 @@ func shapeLike(path []string, want, got interface{}, eq Equivalent) (interface{}
 		}
 		return out, same
 	default:
-		if reflect.DeepEqual(want, got) || sameDuration(want, got) || (eq != nil && eq(path, want, got)) {
+		if reflect.DeepEqual(want, got) || (eq != nil && eq(path, want, got)) {
 			return want, true
 		}
 		return got, false
@@ -132,19 +131,24 @@ func isZeroJSON(v interface{}) bool {
 	return false
 }
 
-// foldedKey finds the value of a key in m that differs from k only in case.
+// foldedKey finds the value of the one key in m that differs from k only in case; with none, or
+// more than one, it's not found.
 func foldedKey(m map[string]interface{}, k string) (interface{}, bool) {
+	var found interface{}
+	n := 0
 	for mk, v := range m {
 		if strings.EqualFold(mk, k) {
-			return v, true
+			found = v
+			n++
 		}
 	}
-	return nil, false
+	return found, n == 1
 }
 
-// sameDuration reports whether want and got are the same duration written two ways, as the API
-// rewrites them ("60s" as "1m0s", "24h" as "24h0m0s").
-func sameDuration(want, got interface{}) bool {
+// SameDuration is an Equivalent for attributes the API rewrites durations in ("60s" as "1m0s",
+// "24h" as "24h0m0s"): alert rules and notification channels. Not for free-form JSON, where a
+// string that reads as a duration may just be text.
+func SameDuration(_ []string, want, got interface{}) bool {
 	w, ok1 := want.(string)
 	g, ok2 := got.(string)
 	if !ok1 || !ok2 {

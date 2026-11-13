@@ -74,6 +74,19 @@ func TestShapeLike(t *testing.T) {
 			want:   `{"a": "60s", "b": "24h", "c": "2m"}`,
 			got:    `{"a": "1m0s", "b": "24h0m0s", "c": "3m0s"}`,
 			expect: `{"a":"60s","b":"24h","c":"3m0s"}`,
+			eq:     client.SameDuration,
+		},
+		{
+			name:   "without SameDuration, a duration-like string is just text",
+			want:   `{"label": "1h"}`,
+			got:    `{"label": "60m"}`,
+			expect: `{"label":"60m"}`,
+		},
+		{
+			name:   "a key in two other cases matches neither",
+			want:   `{"h": {"subject": "x"}}`,
+			got:    `{"h": {"Subject": "x", "SUBJECT": "x"}}`,
+			expect: `{"h":{}}`,
 		},
 		{
 			name:   "a key the API returns in another case matches",

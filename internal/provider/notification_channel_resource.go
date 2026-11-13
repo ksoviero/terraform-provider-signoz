@@ -182,7 +182,7 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	shaped, err := shapedForState(state.Config.StringValue, raw, out.Config.ValueString(), imported, nil)
+	shaped, err := shapedForState(state.Config.StringValue, raw, out.Config.ValueString(), imported, client.SameDuration)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
