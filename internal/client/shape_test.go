@@ -103,3 +103,30 @@ func TestShapeLike(t *testing.T) {
 		})
 	}
 }
+
+// Tidying a rule's spec (RuleSpecFromMap) mustn't change the raw spec read from the same rule.
+func TestRawRuleSpecFromMap_untouchedByTidying(t *testing.T) {
+	t.Parallel()
+
+	full := map[string]interface{}{
+		"id": "r",
+		"condition": map[string]interface{}{
+			"absentFor": 0.0, "seasonality": "",
+			"compositeQuery": map[string]interface{}{"queries": []interface{}{
+				map[string]interface{}{"spec": map[string]interface{}{"functions": []interface{}{map[string]interface{}{"name": "cumulativeSum"}}}},
+			}},
+		},
+		"notificationSettings": map[string]interface{}{"newGroupEvalDelay": "0s"},
+	}
+	if _, err := client.RuleSpecFromMap(full); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := client.RawRuleSpecFromMap(full)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"condition":{"absentFor":0,"compositeQuery":{"queries":[{"spec":{"functions":[{"name":"cumulativeSum"}]}}]},"seasonality":""},"notificationSettings":{"newGroupEvalDelay":"0s"}}`
+	if raw != want {
+		t.Fatalf("got  %s\nwant %s", raw, want)
+	}
+}

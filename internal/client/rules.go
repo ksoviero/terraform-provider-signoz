@@ -309,11 +309,14 @@ var ruleTopLevelFields = []string{
 	"labels", "annotations", "createdAt", "updatedAt", "createdBy", "updatedBy",
 }
 
-// ruleSpecMap returns a copy of a rule without the fields that have attributes of their own.
+// ruleSpecMap returns a deep copy of a rule without the fields that have attributes of their
+// own. Deep, as RuleSpecFromMap tidies the copy in place and the raw spec is taken from the same
+// rule.
 func ruleSpecMap(full map[string]interface{}) map[string]interface{} {
-	copy := make(map[string]interface{}, len(full))
-	for k, v := range full {
-		copy[k] = v
+	var copy map[string]interface{}
+	b, err := json.Marshal(full)
+	if err != nil || json.Unmarshal(b, &copy) != nil || copy == nil {
+		copy = map[string]interface{}{}
 	}
 	for _, k := range ruleTopLevelFields {
 		delete(copy, k)
