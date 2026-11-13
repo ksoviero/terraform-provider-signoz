@@ -63,12 +63,10 @@ func (r *DashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			// Not kept in the plan: nothing says an update leaves it as it is
 			"source": schema.StringAttribute{
 				MarkdownDescription: docDashboardSource,
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"created_at": schema.StringAttribute{
 				MarkdownDescription: docCreatedAt,
@@ -149,7 +147,7 @@ func (r *DashboardResource) Create(ctx context.Context, req resource.CreateReque
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	state = settled(plan, state)
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -173,7 +171,7 @@ func (r *DashboardResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	shapeReadJSON(state.Data, &out.Data, imported, &resp.Diagnostics)
-	out = refreshed(state, out, imported)
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -202,7 +200,7 @@ func (r *DashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	out = settled(plan, out)
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

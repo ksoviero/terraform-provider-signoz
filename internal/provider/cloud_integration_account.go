@@ -102,12 +102,10 @@ func (r *CloudIntegrationAccountResource) Schema(_ context.Context, _ resource.S
 				Computed:            true,
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
+			// Not kept in the plan: the agent's check-in sets it after create
 			"provider_account_id": schema.StringAttribute{
 				MarkdownDescription: docCloudProviderAccountID,
 				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
 			},
 			"org_id":     schema.StringAttribute{MarkdownDescription: docOrgID, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"created_at": schema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
@@ -145,7 +143,7 @@ func (r *CloudIntegrationAccountResource) Create(ctx context.Context, req resour
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	state = settled(plan, state)
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -168,7 +166,7 @@ func (r *CloudIntegrationAccountResource) Read(ctx context.Context, req resource
 	}
 	out.Credentials = state.Credentials
 	shapeReadJSON(state.Config, &out.Config, imported, &resp.Diagnostics)
-	out = refreshed(state, out, imported)
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -198,7 +196,7 @@ func (r *CloudIntegrationAccountResource) Update(ctx context.Context, req resour
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	out = settled(plan, out)
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

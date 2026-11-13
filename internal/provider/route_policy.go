@@ -152,7 +152,7 @@ func (r *RoutePolicyResource) Create(ctx context.Context, req resource.CreateReq
 	}
 	state, diags := modelFromRoutePolicyMap(ctx, created)
 	resp.Diagnostics.Append(diags...)
-	state = settled(plan, state)
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -170,7 +170,7 @@ func (r *RoutePolicyResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 	out, diags := modelFromRoutePolicyMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
-	out = refreshed(state, out, imported)
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -197,7 +197,7 @@ func (r *RoutePolicyResource) Update(ctx context.Context, req resource.UpdateReq
 	}
 	out, diags := modelFromRoutePolicyMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
-	out = settled(plan, out)
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

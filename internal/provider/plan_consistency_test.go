@@ -121,6 +121,9 @@ func TestAlertRule_emptyValues(t *testing.T) {
 	cfg := strings.Replace(alertRuleConfig(srv.URL, `{}`), `rule_type  = "threshold_rule"`, `rule_type  = "threshold_rule"
   description = ""
   labels      = {}`, 1)
+	if !strings.Contains(cfg, `description = ""`) {
+		t.Fatal("the configuration has no empty description: alertRuleConfig changed")
+	}
 	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: map[string]func() (tfprotov6.ProviderServer, error){"signoz": providerserver.NewProtocol6WithError(New("test")())},
 		Steps:                    []resource.TestStep{{Config: cfg}},

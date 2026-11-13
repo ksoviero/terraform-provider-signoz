@@ -117,20 +117,6 @@ func modelFromChannel(ch *client.Channel) (notificationChannelModel, error) {
 	}, nil
 }
 
-// notificationChannelStateAfterWrite builds state from the API but keeps the planned
-// config value unchanged. SigNoz may canonicalize or mutate receiver JSON on readback;
-// re-normalizing plan config here breaks Terraform sensitive-attribute apply checks.
-func notificationChannelStateAfterWrite(plan notificationChannelModel, ch *client.Channel) (notificationChannelModel, error) {
-	out, err := modelFromChannel(ch)
-	if err != nil {
-		return notificationChannelModel{}, err
-	}
-	if !plan.Config.IsNull() && !plan.Config.IsUnknown() {
-		out.Config = plan.Config
-	}
-	return out, nil
-}
-
 func (r *NotificationChannelResource) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	var plan notificationChannelModel
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
@@ -150,12 +136,12 @@ func (r *NotificationChannelResource) Create(ctx context.Context, req resource.C
 		return
 	}
 
-	state, err := notificationChannelStateAfterWrite(plan, ch)
+	state, err := modelFromChannel(ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	state = settled(plan, state)
+	state = settled(plan, state, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -192,7 +178,7 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 	out.Config = jsontypes.Normalized{StringValue: shaped}
-	out = refreshed(state, out, imported)
+	out = refreshed(state, out, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -221,12 +207,12 @@ func (r *NotificationChannelResource) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	out, err := notificationChannelStateAfterWrite(plan, ch)
+	out, err := modelFromChannel(ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	out = settled(plan, out)
+	out = settled(plan, out, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

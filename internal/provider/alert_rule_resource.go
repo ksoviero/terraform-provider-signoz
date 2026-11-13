@@ -303,7 +303,7 @@ func (r *AlertRuleResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	read := modelFromRuleMap(full, spec)
-	read.model = settled(plan, read.model)
+	read.model = settled(plan, read.model, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
@@ -354,7 +354,7 @@ func (r *AlertRuleResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	read.model.Spec = alertRuleSpecValue{StringValue: shaped}
-	read.model = refreshed(state, read.model, imported)
+	read.model = refreshed(state, read.model, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
@@ -389,7 +389,7 @@ func (r *AlertRuleResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	read := modelFromRuleMap(full, spec)
-	read.model = settled(plan, read.model)
+	read.model = settled(plan, read.model, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
