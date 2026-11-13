@@ -183,7 +183,7 @@ const (
 	docCloudConfig = "JSON account configuration (`CloudintegrationtypesPostableAccountConfig`). For AWS include `aws.deploymentRegion` and `aws.regions`; for Azure include `azure` per OpenAPI."
 
 	docCloudCredentials = "JSON credentials (`CloudintegrationtypesCredentials`) required on create: `sigNozApiUrl`, `sigNozApiKey`, `ingestionUrl`, `ingestionKey`. " +
-		"Default: omitted on update (not sent; value retained in Terraform state only). Sensitive."
+		"SigNoz takes credentials only on create, so changing them replaces the account; taking them out of the configuration after create keeps the account and drops them from state. Sensitive."
 
 	docCloudAccountProvider = "Provider slug on the account object returned by the API (e.g. `aws`, `azure`). Read-only."
 

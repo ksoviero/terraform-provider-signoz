@@ -35,15 +35,20 @@ func TestRefreshed(t *testing.T) {
 	emptyMap, _ := types.MapValue(types.StringType, nil)
 	prior := settleModel{Name: types.StringValue(""), Labels: emptyMap, UpdatedAt: types.StringValue("then")}
 	read := settleModel{Name: types.StringNull(), Labels: types.MapNull(types.StringType), UpdatedAt: types.StringValue("now")}
-	got := refreshed(prior, read)
+	got := refreshed(prior, read, false)
 	if !got.Name.Equal(prior.Name) || !got.Labels.Equal(prior.Labels) {
 		t.Errorf("an empty value the API left out showed as drift: %+v", got)
 	}
 	if !got.UpdatedAt.Equal(read.UpdatedAt) {
 		t.Errorf("a real change wasn't read: %+v", got)
 	}
-	changed := refreshed(settleModel{Name: types.StringValue("a")}, settleModel{Name: types.StringNull()})
+	changed := refreshed(settleModel{Name: types.StringValue("a")}, settleModel{Name: types.StringNull()}, false)
 	if !changed.Name.IsNull() {
 		t.Errorf("a value the API dropped didn't show as drift: %+v", changed)
+	}
+	// After an import, the API's false isn't kept as state's null
+	imported := refreshed(settleModel{Name: types.StringNull()}, settleModel{Name: types.StringValue("")}, true)
+	if !imported.Name.Equal(types.StringValue("")) {
+		t.Errorf("an import kept state's null: %+v", imported)
 	}
 }

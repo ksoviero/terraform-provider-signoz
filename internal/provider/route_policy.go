@@ -162,6 +162,7 @@ func (r *RoutePolicyResource) Read(ctx context.Context, req resource.ReadRequest
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 	m, err := r.client.GetRoutePolicy(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("SigNoz API error", err.Error())
@@ -169,7 +170,7 @@ func (r *RoutePolicyResource) Read(ctx context.Context, req resource.ReadRequest
 	}
 	out, diags := modelFromRoutePolicyMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
-	out = refreshed(state, out)
+	out = refreshed(state, out, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -213,6 +214,7 @@ func (r *RoutePolicyResource) Delete(ctx context.Context, req resource.DeleteReq
 
 func (r *RoutePolicyResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }
 
 var _ datasource.DataSource = &RoutePolicyDataSource{}

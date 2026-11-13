@@ -177,7 +177,7 @@ func (r *SavedViewResource) Read(ctx context.Context, req resource.ReadRequest, 
 	out, diags := modelFromSavedViewMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
 	shapeReadJSON(state.CompositeQuery, &out.CompositeQuery, imported, &resp.Diagnostics)
-	out = refreshed(state, out)
+	out = refreshed(state, out, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

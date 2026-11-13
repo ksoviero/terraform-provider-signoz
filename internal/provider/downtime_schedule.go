@@ -175,7 +175,7 @@ func (r *DowntimeScheduleResource) Read(ctx context.Context, req resource.ReadRe
 	out, diags := modelFromDowntimeScheduleMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
 	shapeReadJSON(state.Schedule, &out.Schedule, imported, &resp.Diagnostics)
-	out = refreshed(state, out)
+	out = refreshed(state, out, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

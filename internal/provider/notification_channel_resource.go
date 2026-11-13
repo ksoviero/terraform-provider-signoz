@@ -192,7 +192,7 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 	out.Config = jsontypes.Normalized{StringValue: shaped}
-	out = refreshed(state, out)
+	out = refreshed(state, out, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -269,12 +269,14 @@ func (sameReceiverKindKeepsType) PlanModifyString(ctx context.Context, req planm
 	if resp.Diagnostics.HasError() || planned.IsUnknown() || planned.IsNull() || prior.IsNull() {
 		return
 	}
-	if receiverKinds(planned.ValueString()) == receiverKinds(prior.ValueString()) {
+	// With no kind to compare, it stays unknown
+	if kinds := receiverKinds(planned.ValueString()); kinds != "" && kinds == receiverKinds(prior.ValueString()) {
 		resp.PlanValue = req.StateValue
 	}
 }
 
-// receiverKinds lists a receiver config's *_configs keys, sorted, or "" if it isn't JSON.
+// receiverKinds lists a receiver config's *_configs keys, sorted: "" if there are none or it
+// isn't JSON.
 func receiverKinds(config string) string {
 	var m map[string]interface{}
 	if json.Unmarshal([]byte(config), &m) != nil {

@@ -22,7 +22,7 @@ Manages a SigNoz cloud integration account (`/api/v1/cloud_integrations/{cloud_p
 
 ### Optional
 
-- `credentials` (String, Sensitive) JSON credentials (`CloudintegrationtypesCredentials`) required on create: `sigNozApiUrl`, `sigNozApiKey`, `ingestionUrl`, `ingestionKey`. Default: omitted on update (not sent; value retained in Terraform state only). Sensitive.
+- `credentials` (String, Sensitive) JSON credentials (`CloudintegrationtypesCredentials`) required on create: `sigNozApiUrl`, `sigNozApiKey`, `ingestionUrl`, `ingestionKey`. SigNoz takes credentials only on create, so changing them replaces the account; taking them out of the configuration after create keeps the account and drops them from state. Sensitive.
 
 ### Read-Only
 

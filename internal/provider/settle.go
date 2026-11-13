@@ -34,8 +34,12 @@ func settled[T any](planned, read T) T {
 // refreshed is the state a resource's Read sets: the values read from the API, except that an
 // attribute the API has as null and state as empty ("", 0, false, [] or {}), or the other way
 // round, keeps state's value. The API often leaves out an empty value, and they mean the same,
-// so neither shows as drift. JSON attributes are compared separately (shapedForState).
-func refreshed[T any](prior, read T) T {
+// so neither shows as drift. JSON attributes are compared separately (shapedForState). After an
+// import (imported) state has nothing to keep yet, so it's all the API's.
+func refreshed[T any](prior, read T, imported bool) T {
+	if imported {
+		return read
+	}
 	out := read
 	pv := reflect.ValueOf(&prior).Elem()
 	ov := reflect.ValueOf(&out).Elem()

@@ -173,7 +173,7 @@ func (r *DashboardResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	shapeReadJSON(state.Data, &out.Data, imported, &resp.Diagnostics)
-	out = refreshed(state, out)
+	out = refreshed(state, out, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

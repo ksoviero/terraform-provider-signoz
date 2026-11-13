@@ -3,6 +3,7 @@
 package provider
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -18,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -28,6 +30,8 @@ import (
 type fakeRuleAPI struct {
 	mu    sync.Mutex
 	rules map[string]map[string]interface{}
+	// keep ignores deletes, so a rule outlives the test case that made it
+	keep bool
 }
 
 func (f *fakeRuleAPI) echo(stored map[string]interface{}) map[string]interface{} {
@@ -100,7 +104,9 @@ func (f *fakeRuleAPI) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		reply(f.echo(stored))
 	case r.Method == http.MethodDelete && r.URL.Path == "/api/v2/rules/rule-1":
-		delete(f.rules, "rule-1")
+		if !f.keep {
+			delete(f.rules, "rule-1")
+		}
 		w.WriteHeader(http.StatusNoContent)
 	default:
 		http.NotFound(w, r)
@@ -235,6 +241,51 @@ func TestShapedForState(t *testing.T) {
 		}
 		if !got.Equal(tc.want) {
 			t.Errorf("%s: got %s, want %s", tc.name, got, tc.want)
+		}
+	}
+}
+
+// An imported rule's first plan changes only its spec (from the API's, tidied, to the
+// configuration's: documented), not values the API has as false or "" that the configuration
+// leaves out (disabled), which aren't kept as state's nulls.
+func TestAlertRule_importThenPlan(t *testing.T) {
+	if _, err := exec.LookPath("terraform"); err != nil {
+		t.Skip("terraform isn't on PATH")
+	}
+	api := &fakeRuleAPI{rules: map[string]map[string]interface{}{}, keep: true}
+	srv := httptest.NewServer(api)
+	defer srv.Close()
+	factories := map[string]func() (tfprotov6.ProviderServer, error){
+		"signoz": providerserver.NewProtocol6WithError(New("test")()),
+	}
+	cfg := alertRuleConfig(srv.URL, `{}`)
+	// Made in SigNoz (by a test case whose destroy keeps it)
+	resource.UnitTest(t, resource.TestCase{ProtoV6ProviderFactories: factories, Steps: []resource.TestStep{{Config: cfg}}})
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: factories,
+		Steps: []resource.TestStep{
+			{Config: cfg, ResourceName: "signoz_alert_rule.test", ImportState: true, ImportStateId: "rule-1", ImportStatePersist: true},
+			{Config: cfg, ConfigPlanChecks: resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{onlySpecChanges{}}}},
+		},
+	})
+}
+
+// onlySpecChanges fails a plan that changes any attribute but spec and what follows from it.
+type onlySpecChanges struct{}
+
+func (onlySpecChanges) CheckPlan(_ context.Context, req plancheck.CheckPlanRequest, resp *plancheck.CheckPlanResponse) {
+	for _, rc := range req.Plan.ResourceChanges {
+		before, _ := rc.Change.Before.(map[string]interface{})
+		after, _ := rc.Change.After.(map[string]interface{})
+		for k, v := range after {
+			switch k {
+			case "spec", "updated_at", "updated_by":
+				continue
+			}
+			if fmt.Sprint(before[k]) != fmt.Sprint(v) {
+				resp.Error = fmt.Errorf("%s changes after the import: %v -> %v", k, before[k], v)
+				return
+			}
 		}
 	}
 }

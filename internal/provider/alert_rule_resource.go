@@ -354,7 +354,7 @@ func (r *AlertRuleResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	read.model.Spec = alertRuleSpecValue{StringValue: shaped}
-	read.model = refreshed(state, read.model)
+	read.model = refreshed(state, read.model, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 

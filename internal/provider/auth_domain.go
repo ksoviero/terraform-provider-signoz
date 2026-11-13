@@ -132,7 +132,7 @@ func (r *AuthDomainResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 	shapeReadJSON(state.Config, &out.Config, imported, &resp.Diagnostics)
-	out = refreshed(state, out)
+	out = refreshed(state, out, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

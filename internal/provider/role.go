@@ -122,13 +122,14 @@ func (r *RoleResource) Read(ctx context.Context, req resource.ReadRequest, resp 
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 	m, err := r.client.GetRole(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("SigNoz API error", err.Error())
 		return
 	}
 	out := modelFromRoleMap(m)
-	out = refreshed(state, out)
+	out = refreshed(state, out, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -166,6 +167,7 @@ func (r *RoleResource) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 func (r *RoleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }
 
 var _ datasource.DataSource = &RoleDataSource{}

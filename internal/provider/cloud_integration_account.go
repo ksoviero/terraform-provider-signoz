@@ -89,7 +89,7 @@ func (r *CloudIntegrationAccountResource) Schema(_ context.Context, _ resource.S
 				},
 			},
 			"config":      normalizedJSONAttribute(docCloudConfig, true),
-			"credentials": normalizedJSONOptionalWithUnknown(docCloudCredentials, true),
+			"credentials": credentialsAttribute(),
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
 				Computed:            true,
@@ -145,7 +145,6 @@ func (r *CloudIntegrationAccountResource) Create(ctx context.Context, req resour
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	state.Credentials = plan.Credentials
 	state = settled(plan, state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
@@ -169,7 +168,7 @@ func (r *CloudIntegrationAccountResource) Read(ctx context.Context, req resource
 	}
 	out.Credentials = state.Credentials
 	shapeReadJSON(state.Config, &out.Config, imported, &resp.Diagnostics)
-	out = refreshed(state, out)
+	out = refreshed(state, out, imported)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -199,7 +198,6 @@ func (r *CloudIntegrationAccountResource) Update(ctx context.Context, req resour
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	out.Credentials = state.Credentials
 	out = settled(plan, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
@@ -362,4 +360,19 @@ func (d *CloudIntegrationAccountsDataSource) Read(ctx context.Context, req datas
 		CloudProvider: config.CloudProvider,
 		Accounts:      accounts,
 	})...)
+}
+
+// credentialsAttribute is a cloud account's credentials: SigNoz takes them only on create (its
+// update has config alone), so a change to them replaces the account. Left out of the
+// configuration after create, they're just forgotten.
+func credentialsAttribute() schema.StringAttribute {
+	a := normalizedJSONOptionalWithUnknown(docCloudCredentials, true)
+	a.PlanModifiers = append(a.PlanModifiers, stringplanmodifier.RequiresReplaceIf(
+		func(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+			resp.RequiresReplace = !req.PlanValue.IsNull() && !req.StateValue.IsNull()
+		},
+		"Changing credentials replaces the account: SigNoz takes them only on create.",
+		"Changing `credentials` replaces the account: SigNoz takes them only on create.",
+	))
+	return a
 }
