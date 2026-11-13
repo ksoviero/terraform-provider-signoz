@@ -78,7 +78,9 @@ const (
 
 	docDashboardData = "Dashboard JSON document (`PostableDashboard` / `UpdatableDashboard`). Typically includes `title`, `description`, `tags`, `layout`, `widgets`, and `version` (often `v5` for current SigNoz layouts)."
 
-	docDashboardLocked = "Whether the dashboard is locked in the UI. Default: `false`. Only `false` can be set for now: the dashboard API this provider uses doesn't take it, so `true` is rejected; lock the dashboard in SigNoz's UI."
+	docDashboardLocked = "Whether the dashboard is locked in the UI. Default: SigNoz's value (`false` for a new dashboard). Only `false` can be set for now: the dashboard API this provider uses doesn't take it, so `true` is rejected. Lock the dashboard in SigNoz's UI and leave `locked` out of the configuration, and it follows SigNoz's; while it's locked, SigNoz rejects updates to it."
+
+	docDashboardLockedDataSource = "Whether the dashboard is locked in the UI (a locked dashboard rejects updates)."
 
 	docDashboardSource = "Dashboard source identifier from the API (e.g. how the dashboard was created). Read-only."
 
@@ -183,7 +185,7 @@ const (
 	docCloudConfig = "JSON account configuration (`CloudintegrationtypesPostableAccountConfig`). For AWS include `aws.deploymentRegion` and `aws.regions`; for Azure include `azure` per OpenAPI."
 
 	docCloudCredentials = "JSON credentials (`CloudintegrationtypesCredentials`) required on create: `sigNozApiUrl`, `sigNozApiKey`, `ingestionUrl`, `ingestionKey`. " +
-		"SigNoz takes credentials only on create, so changing them replaces the account; taking them out of the configuration after create keeps the account and drops them from state. Sensitive."
+		"SigNoz takes credentials only on create, so changing them replaces the account (as does credentials that are known only after apply); taking them out of the configuration after create keeps the account and drops them from state. Sensitive."
 
 	docCloudAccountProvider = "Provider slug on the account object returned by the API (e.g. `aws`, `azure`). Read-only."
 

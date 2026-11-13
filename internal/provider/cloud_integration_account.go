@@ -370,6 +370,11 @@ func credentialsAttribute() schema.StringAttribute {
 			if req.PlanValue.IsNull() || req.StateValue.IsNull() {
 				return
 			}
+			// Credentials known only after apply may differ, and can't be sent then: replace
+			if req.PlanValue.IsUnknown() {
+				resp.RequiresReplace = true
+				return
+			}
 			// The same credentials written another way (reindented, jsonencode) aren't a change
 			planned, err1 := client.CanonicalJSON(req.PlanValue.ValueString())
 			prior, err2 := client.CanonicalJSON(req.StateValue.ValueString())

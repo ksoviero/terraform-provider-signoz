@@ -38,7 +38,7 @@ Read-Only:
 - `created_by` (String) Identifier of the user or service that created the object. Read-only.
 - `data` (String) Dashboard JSON document (`PostableDashboard` / `UpdatableDashboard`). Typically includes `title`, `description`, `tags`, `layout`, `widgets`, and `version` (often `v5` for current SigNoz layouts).
 - `id` (String) SigNoz-assigned UUID. Read-only.
-- `locked` (Boolean) Whether the dashboard is locked in the UI. Default: `false`. Only `false` can be set for now: the dashboard API this provider uses doesn't take it, so `true` is rejected; lock the dashboard in SigNoz's UI.
+- `locked` (Boolean) Whether the dashboard is locked in the UI (a locked dashboard rejects updates).
 - `source` (String) Dashboard source identifier from the API (e.g. how the dashboard was created). Read-only.
 - `updated_at` (String) RFC3339 timestamp when the object was last updated. Read-only.
 - `updated_by` (String) Identifier of the user or service that last updated the object. Read-only.

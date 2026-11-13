@@ -62,8 +62,8 @@ func refreshed[T any](prior, read T, imported bool, diags *diag.Diagnostics) T {
 		// Nothing in state to keep, but an empty string is how SigNoz leaves a value unset:
 		// null, as a configuration that leaves it out has it. Other empties (false, 0) are
 		// the API's values, kept.
-		ov := reflect.ValueOf(&out).Elem()
-		if ov.Kind() != reflect.Struct {
+		_, ov, ok := modelValues(&prior, &out, diags)
+		if !ok {
 			return read
 		}
 		for i := 0; i < ov.NumField(); i++ {

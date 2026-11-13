@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -55,8 +55,10 @@ func (r *DashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				MarkdownDescription: docDashboardLocked,
 				Optional:            true,
 				Computed:            true,
-				Default:             booldefault.StaticBool(false),
-				Validators:          []validator.Bool{lockedNotSupported{}},
+				// SigNoz's value when the configuration leaves it out, so a dashboard locked in
+				// the UI stays locked rather than showing true -> false on every plan
+				PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
+				Validators:    []validator.Bool{lockedNotSupported{}},
 			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
@@ -238,6 +240,6 @@ func (v lockedNotSupported) MarkdownDescription(ctx context.Context) string {
 func (lockedNotSupported) ValidateBool(_ context.Context, req validator.BoolRequest, resp *validator.BoolResponse) {
 	if !req.ConfigValue.IsNull() && !req.ConfigValue.IsUnknown() && req.ConfigValue.ValueBool() {
 		resp.Diagnostics.AddAttributeError(req.Path, "locked can't be set yet",
-			"This provider can't lock a dashboard yet: the dashboard API it uses doesn't take locked, so it would never be sent. Lock the dashboard in SigNoz's UI, and leave locked out of the configuration.")
+			"This provider can't lock a dashboard yet: the dashboard API it uses doesn't take locked, so it would never be sent. Lock the dashboard in SigNoz's UI and leave locked out of the configuration: it then follows SigNoz's.")
 	}
 }
