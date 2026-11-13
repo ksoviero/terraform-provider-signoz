@@ -83,6 +83,12 @@ func TestShapeLike(t *testing.T) {
 			expect: `{"label":"60m"}`,
 		},
 		{
+			name:   "outside headers a key's case matters",
+			want:   `{"Title": "x"}`,
+			got:    `{"title": "x"}`,
+			expect: `{}`,
+		},
+		{
 			name:   "a key in two other cases matches neither",
 			want:   `{"h": {"subject": "x"}}`,
 			got:    `{"h": {"Subject": "x", "SUBJECT": "x"}}`,

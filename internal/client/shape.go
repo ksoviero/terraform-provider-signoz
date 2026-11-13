@@ -25,7 +25,8 @@ type Equivalent func(path []string, want, got interface{}) bool
 //   - otherwise got reduced to want's fields, with want's own values wherever they still match:
 //     the plan then shows only the fields that really changed.
 //
-// A key the API returns in another case matches when there's no exact one and only one such key.
+// Under a "headers" object, a header the API returns in another case matches when there's no
+// exact one and only one such key.
 //
 // A field want sets to its zero value (false, 0, "", null, [] or {}) that got leaves out, or has
 // as null, counts as the same: the API often omits its defaults. Lists are compared item by
@@ -70,8 +71,9 @@ func shapeLike(path []string, want, got interface{}, eq Equivalent) (interface{}
 		same := true
 		for k, wv := range w {
 			gv, present := g[k]
-			if !present {
-				// The API may change a key's case (Alertmanager's email headers)
+			if !present && len(path) > 0 && path[len(path)-1] == "headers" {
+				// Header names are case-insensitive, and Alertmanager title-cases email
+				// headers. Anywhere else a key's case matters.
 				gv, present = foldedKey(g, k)
 			}
 			if !present {
