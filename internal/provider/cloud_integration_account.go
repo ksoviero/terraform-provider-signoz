@@ -380,10 +380,7 @@ func credentialsAttribute() schema.StringAttribute {
 			if req.PlanValue.IsUnknown() {
 				return
 			}
-			// The same credentials written another way (reindented, jsonencode) aren't a change
-			planned, err1 := client.CanonicalJSON(req.PlanValue.ValueString())
-			prior, err2 := client.CanonicalJSON(req.StateValue.ValueString())
-			resp.RequiresReplace = err1 != nil || err2 != nil || planned != prior
+			resp.RequiresReplace = !sameCredentials(req.PlanValue.ValueString(), req.StateValue.ValueString())
 		},
 		"Changing credentials replaces the account: SigNoz takes them only on create.",
 		"Changing `credentials` replaces the account: SigNoz takes them only on create.",
@@ -392,7 +389,8 @@ func credentialsAttribute() schema.StringAttribute {
 }
 
 // credentialsUnsent checks the credentials an Update has, which SigNoz can't take (only on
-// create): the same as in state is fine; new ones where state has none (after an import) are
+// create): the same as in state is fine; new ones where state has none (after an import, or
+// once taken out of the configuration) are
 // recorded with a warning that they weren't sent; different ones, known only now (the plan had
 // them unknown), are an error, as they'd need the account replaced. False stops the Update.
 func credentialsUnsent(planned, prior jsontypes.Normalized, diags *diag.Diagnostics) bool {
@@ -401,15 +399,21 @@ func credentialsUnsent(planned, prior jsontypes.Normalized, diags *diag.Diagnost
 	}
 	if prior.IsNull() {
 		diags.AddAttributeWarning(path.Root("credentials"), "Credentials not sent",
-			"SigNoz takes a cloud account's credentials only on create, so these are recorded in state but weren't sent. To use them, replace the account (terraform apply -replace).")
+			"SigNoz takes a cloud account's credentials only on create, and state had none (after an import, or with them taken out of the configuration), so these are recorded in state but weren't sent. To use them, replace the account (terraform apply -replace).")
 		return true
 	}
-	p, err1 := client.CanonicalJSON(planned.ValueString())
-	s, err2 := client.CanonicalJSON(prior.ValueString())
-	if err1 == nil && err2 == nil && p == s {
+	if sameCredentials(planned.ValueString(), prior.ValueString()) {
 		return true
 	}
-	diags.AddAttributeError(path.Root("credentials"), "Credentials changed",
+	diags.AddAttributeError(path.Root("credentials"), "Invalid configuration",
 		"The credentials changed, but SigNoz takes a cloud account's credentials only on create. Replace the account to use them (terraform apply -replace).")
 	return false
+}
+
+// sameCredentials reports whether two credentials values are the same JSON, however written
+// (reindented, jsonencode); invalid JSON is never the same.
+func sameCredentials(a, b string) bool {
+	ca, err1 := client.CanonicalJSON(a)
+	cb, err2 := client.CanonicalJSON(b)
+	return err1 == nil && err2 == nil && ca == cb
 }

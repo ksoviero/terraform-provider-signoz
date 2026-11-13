@@ -239,7 +239,7 @@ func (v lockedNotSupported) MarkdownDescription(ctx context.Context) string {
 
 func (lockedNotSupported) ValidateBool(_ context.Context, req validator.BoolRequest, resp *validator.BoolResponse) {
 	if !req.ConfigValue.IsNull() && !req.ConfigValue.IsUnknown() && req.ConfigValue.ValueBool() {
-		resp.Diagnostics.AddAttributeError(req.Path, "locked can't be set yet",
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid configuration",
 			"This provider can't lock a dashboard yet: the dashboard API it uses doesn't take locked, so it would never be sent. Lock the dashboard in SigNoz's UI and leave locked out of the configuration: it then follows SigNoz's.")
 	}
 }

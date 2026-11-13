@@ -67,7 +67,8 @@ func refreshed[T any](prior, read T, imported bool, diags *diag.Diagnostics) T {
 			return read
 		}
 		for i := 0; i < ov.NumField(); i++ {
-			if s, ok := ov.Field(i).Interface().(basetypes.StringValue); ok && ov.Type().Field(i).IsExported() && isEmptyValue(s) {
+			v, ok := fieldValue(ov, i)
+			if s, isString := v.(basetypes.StringValue); ok && isString && isEmptyValue(s) {
 				ov.Field(i).Set(reflect.ValueOf(basetypes.NewStringNull()))
 			}
 		}
