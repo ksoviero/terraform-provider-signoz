@@ -156,6 +156,7 @@ func (r *CloudIntegrationAccountResource) Read(ctx context.Context, req resource
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 	m, err := r.client.GetCloudAccount(ctx, state.CloudProvider.ValueString(), state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("SigNoz API error", err.Error())
@@ -167,7 +168,7 @@ func (r *CloudIntegrationAccountResource) Read(ctx context.Context, req resource
 		return
 	}
 	out.Credentials = state.Credentials
-	shapeReadJSON(state.Config, &out.Config, &resp.Diagnostics)
+	shapeReadJSON(state.Config, &out.Config, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -221,6 +222,7 @@ func (r *CloudIntegrationAccountResource) ImportState(ctx context.Context, req r
 	}
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("cloud_provider"), parts[0])...)
 	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), parts[1])...)
+	markImported(ctx, resp)
 }
 
 func splitImportID(id string, n int) []string {

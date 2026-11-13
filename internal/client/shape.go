@@ -26,10 +26,12 @@ type Equivalent func(path []string, want, got interface{}) bool
 //
 // A field want sets to its zero value (false, 0, "", null, [] or {}) that got leaves out, or has
 // as null, counts as the same: the API often omits its defaults. Lists are compared item by
-// item; one of another length is drift, and got's extra items are kept whole. An empty want (an
-// import, nothing in state yet) keeps all of got.
+// item; one of another length is drift, and got's extra items are kept whole. An object want
+// sets to {} matches any object, as it sets none of its fields. An empty want or got keeps got
+// as it is.
 func ShapeLike(want, got string, eq Equivalent) (string, error) {
-	if strings.TrimSpace(want) == "" {
+	if strings.TrimSpace(want) == "" || strings.TrimSpace(got) == "" {
+		// Nothing in state to compare with, or nothing from the API: the plan shows got as it is
 		return got, nil
 	}
 	var w, g interface{}

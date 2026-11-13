@@ -168,6 +168,7 @@ func (r *SavedViewResource) Read(ctx context.Context, req resource.ReadRequest, 
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 	m, err := r.client.GetSavedView(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("SigNoz API error", err.Error())
@@ -175,7 +176,7 @@ func (r *SavedViewResource) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 	out, diags := modelFromSavedViewMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
-	shapeReadJSON(state.CompositeQuery, &out.CompositeQuery, &resp.Diagnostics)
+	shapeReadJSON(state.CompositeQuery, &out.CompositeQuery, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -219,6 +220,7 @@ func (r *SavedViewResource) Delete(ctx context.Context, req resource.DeleteReque
 
 func (r *SavedViewResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }
 
 var _ datasource.DataSource = &SavedViewDataSource{}

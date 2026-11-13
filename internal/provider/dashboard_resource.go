@@ -159,6 +159,7 @@ func (r *DashboardResource) Read(ctx context.Context, req resource.ReadRequest, 
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 
 	d, err := r.client.GetDashboard(ctx, state.ID.ValueString())
 	if err != nil {
@@ -171,7 +172,7 @@ func (r *DashboardResource) Read(ctx context.Context, req resource.ReadRequest, 
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	shapeReadJSON(state.Data, &out.Data, &resp.Diagnostics)
+	shapeReadJSON(state.Data, &out.Data, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -217,4 +218,5 @@ func (r *DashboardResource) Delete(ctx context.Context, req resource.DeleteReque
 
 func (r *DashboardResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }

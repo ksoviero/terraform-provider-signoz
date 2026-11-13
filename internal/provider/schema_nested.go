@@ -33,7 +33,7 @@ func notificationChannelNestedDataSourceAttrs() map[string]dataschema.Attribute 
 	return map[string]dataschema.Attribute{
 		"id":         dataschema.StringAttribute{MarkdownDescription: docID, Computed: true},
 		"name":       dataschema.StringAttribute{MarkdownDescription: docChannelName, Computed: true},
-		"config":     dataschema.StringAttribute{MarkdownDescription: docChannelConfig, CustomType: jsontypes.NormalizedType{}, Computed: true, Sensitive: true},
+		"config":     dataschema.StringAttribute{MarkdownDescription: docChannelConfigDataSource, CustomType: jsontypes.NormalizedType{}, Computed: true, Sensitive: true},
 		"type":       dataschema.StringAttribute{MarkdownDescription: docChannelType, Computed: true},
 		"data":       dataschema.StringAttribute{MarkdownDescription: docChannelData, CustomType: jsontypes.NormalizedType{}, Computed: true, Sensitive: true},
 		"created_at": dataschema.StringAttribute{MarkdownDescription: docCreatedAt, Computed: true},

@@ -4,16 +4,20 @@ package provider
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // fakeRuleAPI stores alert rules as they're sent, and returns them as SigNoz does: with its
@@ -152,16 +156,20 @@ resource "signoz_alert_rule" "test" {
 
 // The API adding defaults and rewriting function names leaves the plan empty; an edit in SigNoz
 // to a field the config sets, or a field removed from the config, still shows as a change.
+// Runs Terraform against a fake API, so it needs terraform on PATH (CI's unit tests set it up);
+// it's skipped without one rather than downloading it.
 func TestAlertRuleSpec_onlyConfiguredFieldsCount(t *testing.T) {
+	if _, err := exec.LookPath("terraform"); err != nil {
+		t.Skip("terraform isn't on PATH")
+	}
 	api := &fakeRuleAPI{rules: map[string]map[string]interface{}{}}
 	srv := httptest.NewServer(api)
 	defer srv.Close()
-	t.Setenv("TF_ACC", "1")
 
 	factories := map[string]func() (tfprotov6.ProviderServer, error){
 		"signoz": providerserver.NewProtocol6WithError(New("test")()),
 	}
-	resource.Test(t, resource.TestCase{
+	resource.UnitTest(t, resource.TestCase{
 		ProtoV6ProviderFactories: factories,
 		Steps: []resource.TestStep{
 			// Applied, then planned again: no changes, whatever the API added
@@ -177,6 +185,46 @@ func TestAlertRuleSpec_onlyConfiguredFieldsCount(t *testing.T) {
 			// Fields taken out of the config are updated away, and the API's defaults for them
 			// don't come back as drift
 			{Config: alertRuleConfig(srv.URL, `{}`)},
+			// An import keeps the API's spec, tidied of its defaults
+			{
+				Config:        alertRuleConfig(srv.URL, `{}`),
+				ResourceName:  "signoz_alert_rule.test",
+				ImportState:   true,
+				ImportStateId: "rule-1",
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					spec := states[0].Attributes["spec"]
+					if !strings.Contains(spec, `"selectedQueryName":"A"`) || strings.Contains(spec, `"order":null`) {
+						return fmt.Errorf("imported spec isn't the API's: %s", spec)
+					}
+					return nil
+				},
+			},
 		},
 	})
+}
+
+func TestShapedForState(t *testing.T) {
+	t.Parallel()
+
+	null := basetypes.NewStringNull()
+	set := basetypes.NewStringValue(`{"a":1}`)
+	api, tidied := `{"a":1,"b":null}`, `{"a":1}`
+	for _, tc := range []struct {
+		name     string
+		prior    basetypes.StringValue
+		imported bool
+		want     basetypes.StringValue
+	}{
+		{"an optional attribute left out stays null", null, false, null},
+		{"an import keeps the API's, tidied", null, true, basetypes.NewStringValue(tidied)},
+		{"a configured value is compared on its fields", set, false, set},
+	} {
+		got, err := shapedForState(tc.prior, api, tidied, tc.imported, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !got.Equal(tc.want) {
+			t.Errorf("%s: got %s, want %s", tc.name, got, tc.want)
+		}
+	}
 }

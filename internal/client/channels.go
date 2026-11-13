@@ -263,11 +263,14 @@ func NormalizeChannelConfigJSON(raw string) (string, error) {
 	if raw == "" {
 		return "", nil
 	}
-	var m map[string]interface{}
-	if err := json.Unmarshal([]byte(raw), &m); err != nil {
-		return "", fmt.Errorf("channel config must be valid JSON: %w", err)
+	cfg, err := ChannelConfigFromData(raw)
+	if err != nil {
+		return "", err
 	}
-	delete(m, "name")
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(cfg), &m); err != nil {
+		return "", err
+	}
 	pruneChannelConfigMap(m)
 	b, err := json.Marshal(m)
 	if err != nil {

@@ -314,6 +314,7 @@ func (r *AlertRuleResource) Read(ctx context.Context, req resource.ReadRequest, 
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 
 	full, err := r.client.GetRuleMap(ctx, state.ID.ValueString())
 	if err != nil {
@@ -332,14 +333,12 @@ func (r *AlertRuleResource) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	read := modelFromRuleMap(full, spec)
-	shaped, ok, err := keepConfigShape(state.Spec.StringValue, raw, client.RuleValuesEquivalent)
+	shaped, err := shapedForState(state.Spec.StringValue, raw, spec, imported, client.RuleValuesEquivalent)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	if ok {
-		read.model.Spec = alertRuleSpecValue{StringValue: basetypes.NewStringValue(shaped)}
-	}
+	read.model.Spec = alertRuleSpecValue{StringValue: shaped}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
@@ -392,4 +391,5 @@ func (r *AlertRuleResource) Delete(ctx context.Context, req resource.DeleteReque
 
 func (r *AlertRuleResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }

@@ -161,6 +161,7 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 
 	ch, err := r.client.GetChannel(ctx, state.ID.ValueString())
 	if err != nil {
@@ -168,9 +169,9 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
-	// The config in state compared with the API's on the fields it sets only, so the
-	// Alertmanager defaults the API adds never show as drift, but a change to a field
-	// the config sets does (keepConfigShape). On import, the pruned config.
+	// The config in state compared with the API's raw receiver JSON on the fields it sets
+	// only, so the Alertmanager defaults the API adds never show as drift, but a change to
+	// a field the config sets does (shapedForState). On import, the pruned config.
 	out, err := modelFromChannel(ch)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
@@ -181,14 +182,12 @@ func (r *NotificationChannelResource) Read(ctx context.Context, req resource.Rea
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	shaped, ok, err := keepConfigShape(state.Config.StringValue, raw, nil)
+	shaped, err := shapedForState(state.Config.StringValue, raw, out.Config.ValueString(), imported, nil)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	if ok {
-		out.Config = newNormalizedJSON(shaped)
-	}
+	out.Config = jsontypes.Normalized{StringValue: shaped}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -238,4 +237,5 @@ func (r *NotificationChannelResource) Delete(ctx context.Context, req resource.D
 
 func (r *NotificationChannelResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }

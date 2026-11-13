@@ -22,9 +22,9 @@ The JSON attributes (`signoz_alert_rule.spec`, `signoz_notification_channel.conf
 - Fields SigNoz adds (its defaults, `null`s for what's unset, fields from a newer SigNoz) never show as changes.
 - A field you set that's changed in SigNoz (in its UI, say) shows as a change, and the next apply puts it back. So does a field you set that SigNoz no longer has, unless you set it to a zero value (`false`, `0`, `""`, `null`, `[]`, `{}`), which SigNoz often leaves out.
 - A field you take out of your config is updated away: the whole value is sent on every update.
-- A change in SigNoz to a field you don't set isn't shown; the next update for any reason resets it.
+- A change in SigNoz to a field you don't set isn't shown; the next update for any reason resets it. An object you set to `{}` sets none of its fields, so it matches whatever SigNoz has there; a list you set to `[]` doesn't (a list's items are compared one by one, and an added one shows).
 
-After an import there's no configuration to compare with yet, so the first plan may show SigNoz's defaults being removed; applying it changes nothing in SigNoz.
+After an import there's no configuration to compare with yet, so the first plan may show SigNoz's defaults being removed; applying it changes nothing in SigNoz. The same goes once for a resource whose state an earlier version of this provider wrote from SigNoz's response.
 
 {{ if .HasExamples -}}
 ## Example Usage

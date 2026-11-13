@@ -120,6 +120,7 @@ func (r *AuthDomainResource) Read(ctx context.Context, req resource.ReadRequest,
 	if resp.Diagnostics.HasError() || r.client == nil {
 		return
 	}
+	imported := readImported(ctx, req, resp)
 	m, err := r.client.GetAuthDomain(ctx, state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("SigNoz API error", err.Error())
@@ -130,7 +131,7 @@ func (r *AuthDomainResource) Read(ctx context.Context, req resource.ReadRequest,
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	shapeReadJSON(state.Config, &out.Config, &resp.Diagnostics)
+	shapeReadJSON(state.Config, &out.Config, imported, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -177,6 +178,7 @@ func (r *AuthDomainResource) Delete(ctx context.Context, req resource.DeleteRequ
 
 func (r *AuthDomainResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+	markImported(ctx, resp)
 }
 
 var _ datasource.DataSource = &AuthDomainDataSource{}

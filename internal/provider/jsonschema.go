@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -162,28 +163,53 @@ func normalizedJSONComputedSensitive(markdown string) schema.StringAttribute {
 	}
 }
 
-// keepConfigShape is what a resource's Read keeps in state for a JSON attribute: the API's value
-// (api) compared with what's in state (prior) on the fields prior sets only, so defaults the API
-// adds never show as drift (client.ShapeLike). With nothing in state (an import) it's api.
-// Create and Update keep the planned value itself. ok is false with nothing in state (an import):
-// the resource then keeps what it read.
-func keepConfigShape(prior basetypes.StringValue, api string, eq client.Equivalent) (shaped string, ok bool, err error) {
-	if prior.IsNull() || prior.IsUnknown() || prior.ValueString() == "" {
-		return "", false, nil
-	}
-	shaped, err = client.ShapeLike(prior.ValueString(), api, eq)
-	return shaped, err == nil, err
+// importedKey is the private state key ImportState sets: the Read that follows an import has
+// no configured value in state to compare the API's JSON with, so it keeps the API's.
+const importedKey = "imported"
+
+// markImported is for ImportState (see importedKey).
+func markImported(ctx context.Context, resp *resource.ImportStateResponse) {
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, importedKey, []byte("true"))...)
 }
 
-// shapeReadJSON replaces read, a JSON attribute as a Read got it from the API, with what to keep
-// in state given prior (keepConfigShape), for attributes the API doesn't rewrite values in.
-func shapeReadJSON(prior jsontypes.Normalized, read *jsontypes.Normalized, diags *diag.Diagnostics) {
-	shaped, ok, err := keepConfigShape(prior.StringValue, read.ValueString(), nil)
+// readImported reports whether this Read follows an import, and clears the flag so later Reads
+// compare as usual.
+func readImported(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) bool {
+	v, diags := req.Private.GetKey(ctx, importedKey)
+	resp.Diagnostics.Append(diags...)
+	if len(v) == 0 {
+		return false
+	}
+	resp.Diagnostics.Append(resp.Private.SetKey(ctx, importedKey, nil)...)
+	return true
+}
+
+// shapedForState is what a resource's Read keeps in state for a JSON attribute, given what's in
+// state (prior) and the API's value (api): the API's value compared with state on the fields
+// state sets only, so fields the API adds are never drift (client.ShapeLike). Create and Update
+// keep the planned value itself. After an import (imported), tidied: the API's value as data
+// sources show it. An optional attribute left out of the configuration stays null.
+func shapedForState(prior basetypes.StringValue, api, tidied string, imported bool, eq client.Equivalent) (basetypes.StringValue, error) {
+	if imported {
+		return basetypes.NewStringValue(tidied), nil
+	}
+	if prior.IsNull() || prior.IsUnknown() {
+		return prior, nil
+	}
+	shaped, err := client.ShapeLike(prior.ValueString(), api, eq)
+	if err != nil {
+		return prior, err
+	}
+	return basetypes.NewStringValue(shaped), nil
+}
+
+// shapeReadJSON sets read, a JSON attribute as Read got it from the API, to what to keep in
+// state (shapedForState), for attributes whose API value is the one compared.
+func shapeReadJSON(prior jsontypes.Normalized, read *jsontypes.Normalized, imported bool, diags *diag.Diagnostics) {
+	v, err := shapedForState(prior.StringValue, read.ValueString(), read.ValueString(), imported, nil)
 	if err != nil {
 		diags.AddError("Internal error", err.Error())
 		return
 	}
-	if ok {
-		*read = newNormalizedJSON(shaped)
-	}
+	*read = jsontypes.Normalized{StringValue: v}
 }

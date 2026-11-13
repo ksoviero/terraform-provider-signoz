@@ -309,9 +309,8 @@ var ruleTopLevelFields = []string{
 	"labels", "annotations", "createdAt", "updatedAt", "createdBy", "updatedBy",
 }
 
-// RawRuleSpecFromMap returns the spec part of a rule as the API returned it, nothing pruned: what
-// a resource's spec is compared with (ShapeLike).
-func RawRuleSpecFromMap(full map[string]interface{}) (string, error) {
+// ruleSpecMap returns a copy of a rule without the fields that have attributes of their own.
+func ruleSpecMap(full map[string]interface{}) map[string]interface{} {
 	copy := make(map[string]interface{}, len(full))
 	for k, v := range full {
 		copy[k] = v
@@ -319,7 +318,13 @@ func RawRuleSpecFromMap(full map[string]interface{}) (string, error) {
 	for _, k := range ruleTopLevelFields {
 		delete(copy, k)
 	}
-	b, err := json.Marshal(copy)
+	return copy
+}
+
+// RawRuleSpecFromMap returns the spec part of a rule as the API returned it, nothing pruned: what
+// a resource's spec is compared with (ShapeLike).
+func RawRuleSpecFromMap(full map[string]interface{}) (string, error) {
+	b, err := json.Marshal(ruleSpecMap(full))
 	if err != nil {
 		return "", err
 	}
@@ -330,13 +335,7 @@ func RawRuleSpecFromMap(full map[string]interface{}) (string, error) {
 // fields), tidied of the API's defaults: for imports and data sources. Resources compare their
 // spec with RawRuleSpecFromMap instead, so a default this misses never shows as drift there.
 func RuleSpecFromMap(full map[string]interface{}) (string, error) {
-	copy := make(map[string]interface{}, len(full))
-	for k, v := range full {
-		copy[k] = v
-	}
-	for _, k := range ruleTopLevelFields {
-		delete(copy, k)
-	}
+	copy := ruleSpecMap(full)
 
 	// The API echoes evalWindow/frequency at the top level as duplicates of
 	// evaluation.spec values. Strip them only when they match, so users who
