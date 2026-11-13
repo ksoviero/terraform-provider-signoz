@@ -389,3 +389,27 @@ func RuleValuesEquivalent(path []string, want, got interface{}) bool {
 	}
 	return false
 }
+
+// WithoutRuleEchoes returns a rule spec without the top-level evalWindow and frequency, which
+// the API echoes from evaluation.spec whatever was sent (stripTopLevelDuplicates): Read compares
+// specs without them on both sides, as the plan does.
+func WithoutRuleEchoes(spec string) (string, error) {
+	if strings.TrimSpace(spec) == "" {
+		return spec, nil
+	}
+	var m map[string]interface{}
+	if err := json.Unmarshal([]byte(spec), &m); err != nil {
+		return "", err
+	}
+	if _, ok := m["evalWindow"]; !ok {
+		if _, ok := m["frequency"]; !ok {
+			return spec, nil
+		}
+	}
+	stripTopLevelDuplicates(m)
+	b, err := json.Marshal(m)
+	if err != nil {
+		return "", err
+	}
+	return CanonicalJSON(string(b))
+}

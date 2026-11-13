@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -60,7 +61,13 @@ func (f *fakeRuleAPI) echo(stored map[string]interface{}) map[string]interface{}
 	if _, ok := ns["newGroupEvalDelay"]; !ok {
 		ns["newGroupEvalDelay"] = "0s"
 	}
+	// Durations come back Go-style ("24h" as "24h0m0s"), and echoed at the top level
 	eval := out["evaluation"].(map[string]interface{})["spec"].(map[string]interface{})
+	for _, k := range []string{"evalWindow", "frequency"} {
+		if d, err := time.ParseDuration(eval[k].(string)); err == nil {
+			eval[k] = d.String()
+		}
+	}
 	out["evalWindow"], out["frequency"] = eval["evalWindow"], eval["frequency"]
 	return out
 }
@@ -144,7 +151,9 @@ resource "signoz_alert_rule" "test" {
         spec = [{ name = "critical", target = 44.1, op = "1", matchType = "5", channels = ["Cliq"] }]
       }
     }, ` + extraCondition + `)
-    evaluation = { kind = "rolling", spec = { evalWindow = "24h0m0s", frequency = "1m" } }
+    evaluation = { kind = "rolling", spec = { evalWindow = "24h", frequency = "1m" } }
+    # The legacy top-level copy, which the API echoes from evaluation.spec
+    evalWindow = "5m"
     notificationSettings = {
       groupBy  = []
       renotify = { enabled = true, interval = "30m", alertStates = ["firing"] }
@@ -154,7 +163,8 @@ resource "signoz_alert_rule" "test" {
 `
 }
 
-// The API adding defaults and rewriting function names leaves the plan empty; an edit in SigNoz
+// The API adding defaults, rewriting function names and durations, and echoing the evaluation at
+// the top level leaves the plan empty; an edit in SigNoz
 // to a field the config sets, or a field removed from the config, still shows as a change.
 // Runs Terraform against a fake API, so it needs terraform on PATH (CI's unit tests set it up);
 // it's skipped without one rather than downloading it.

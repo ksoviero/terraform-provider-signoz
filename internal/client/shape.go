@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Equivalent reports whether the API's value got means the same as the configured value want, at
@@ -23,6 +24,9 @@ type Equivalent func(path []string, want, got interface{}) bool
 //     the API adds (its defaults, nulls, echoes) are ignored, so a new one never shows as drift.
 //   - otherwise got reduced to want's fields, with want's own values wherever they still match:
 //     the plan then shows only the fields that really changed.
+//
+// Durations written two ways ("60s" and "1m0s") are the same, and a key the API returns in
+// another case matches when there's no exact one.
 //
 // A field want sets to its zero value (false, 0, "", null, [] or {}) that got leaves out, or has
 // as null, counts as the same: the API often omits its defaults. Lists are compared item by
@@ -68,6 +72,10 @@ func shapeLike(path []string, want, got interface{}, eq Equivalent) (interface{}
 		for k, wv := range w {
 			gv, present := g[k]
 			if !present {
+				// The API may change a key's case (Alertmanager's email headers)
+				gv, present = foldedKey(g, k)
+			}
+			if !present {
 				if isZeroJSON(wv) {
 					out[k] = wv
 				} else {
@@ -98,7 +106,7 @@ func shapeLike(path []string, want, got interface{}, eq Equivalent) (interface{}
 		}
 		return out, same
 	default:
-		if reflect.DeepEqual(want, got) || (eq != nil && eq(path, want, got)) {
+		if reflect.DeepEqual(want, got) || sameDuration(want, got) || (eq != nil && eq(path, want, got)) {
 			return want, true
 		}
 		return got, false
@@ -122,4 +130,27 @@ func isZeroJSON(v interface{}) bool {
 		return len(t) == 0
 	}
 	return false
+}
+
+// foldedKey finds the value of a key in m that differs from k only in case.
+func foldedKey(m map[string]interface{}, k string) (interface{}, bool) {
+	for mk, v := range m {
+		if strings.EqualFold(mk, k) {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+// sameDuration reports whether want and got are the same duration written two ways, as the API
+// rewrites them ("60s" as "1m0s", "24h" as "24h0m0s").
+func sameDuration(want, got interface{}) bool {
+	w, ok1 := want.(string)
+	g, ok2 := got.(string)
+	if !ok1 || !ok2 {
+		return false
+	}
+	wd, err1 := time.ParseDuration(w)
+	gd, err2 := time.ParseDuration(g)
+	return err1 == nil && err2 == nil && wd == gd
 }

@@ -70,6 +70,18 @@ func TestShapeLike(t *testing.T) {
 			expect: `{"a":"x"}`,
 		},
 		{
+			name:   "durations written two ways are the same",
+			want:   `{"a": "60s", "b": "24h", "c": "2m"}`,
+			got:    `{"a": "1m0s", "b": "24h0m0s", "c": "3m0s"}`,
+			expect: `{"a":"60s","b":"24h","c":"3m0s"}`,
+		},
+		{
+			name:   "a key the API returns in another case matches",
+			want:   `{"headers": {"subject": "x"}}`,
+			got:    `{"headers": {"Subject": "x"}}`,
+			expect: `{"headers": {"subject": "x"}}`,
+		},
+		{
 			name:   "nothing in state keeps all of the API's",
 			want:   ``,
 			got:    `{"a": 1, "b": null}`,
@@ -128,5 +140,21 @@ func TestRawRuleSpecFromMap_untouchedByTidying(t *testing.T) {
 	want := `{"condition":{"absentFor":0,"compositeQuery":{"queries":[{"spec":{"functions":[{"name":"cumulativeSum"}]}}]},"seasonality":""},"notificationSettings":{"newGroupEvalDelay":"0s"}}`
 	if raw != want {
 		t.Fatalf("got  %s\nwant %s", raw, want)
+	}
+}
+
+func TestWithoutRuleEchoes(t *testing.T) {
+	t.Parallel()
+
+	got, err := client.WithoutRuleEchoes(`{"evalWindow":"5m","frequency":"1m","evaluation":{"spec":{"evalWindow":"5m"}}}`)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if want := `{"evaluation":{"spec":{"evalWindow":"5m"}}}`; got != want {
+		t.Fatalf("got %s, want %s", got, want)
+	}
+	unchanged := `{"evaluation": {}}`
+	if got, _ := client.WithoutRuleEchoes(unchanged); got != unchanged {
+		t.Fatalf("a spec without echoes changed: %s", got)
 	}
 }

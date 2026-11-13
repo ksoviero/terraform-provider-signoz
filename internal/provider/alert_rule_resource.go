@@ -332,8 +332,24 @@ func (r *AlertRuleResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	// Without the evaluation the API echoes at the top level, on both sides
+	raw, err = client.WithoutRuleEchoes(raw)
+	if err != nil {
+		resp.Diagnostics.AddError("Internal error", err.Error())
+		return
+	}
+	prior := state.Spec.StringValue
+	if !prior.IsNull() && !prior.IsUnknown() {
+		p, err := client.WithoutRuleEchoes(prior.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("Internal error", err.Error())
+			return
+		}
+		prior = basetypes.NewStringValue(p)
+	}
+
 	read := modelFromRuleMap(full, spec)
-	shaped, err := shapedForState(state.Spec.StringValue, raw, spec, imported, client.RuleValuesEquivalent)
+	shaped, err := shapedForState(prior, raw, spec, imported, client.RuleValuesEquivalent)
 	if err != nil {
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
