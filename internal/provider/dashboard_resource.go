@@ -149,7 +149,7 @@ func (r *DashboardResource) Create(ctx context.Context, req resource.CreateReque
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	state.Data = plan.Data
+	state = settled(plan, state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -173,6 +173,7 @@ func (r *DashboardResource) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 	shapeReadJSON(state.Data, &out.Data, imported, &resp.Diagnostics)
+	out = refreshed(state, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -201,7 +202,7 @@ func (r *DashboardResource) Update(ctx context.Context, req resource.UpdateReque
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
-	out.Data = plan.Data
+	out = settled(plan, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

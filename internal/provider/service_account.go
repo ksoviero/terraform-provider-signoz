@@ -96,6 +96,7 @@ func (r *ServiceAccountResource) Create(ctx context.Context, req resource.Create
 		return
 	}
 	state := modelFromServiceAccountMap(created)
+	state = settled(plan, state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -111,6 +112,7 @@ func (r *ServiceAccountResource) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 	out := modelFromServiceAccountMap(m)
+	out = refreshed(state, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -131,6 +133,7 @@ func (r *ServiceAccountResource) Update(ctx context.Context, req resource.Update
 		return
 	}
 	out := modelFromServiceAccountMap(m)
+	out = settled(plan, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

@@ -158,7 +158,7 @@ func (r *SavedViewResource) Create(ctx context.Context, req resource.CreateReque
 	}
 	state, diags := modelFromSavedViewMap(ctx, created)
 	resp.Diagnostics.Append(diags...)
-	state.CompositeQuery = plan.CompositeQuery
+	state = settled(plan, state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -177,6 +177,7 @@ func (r *SavedViewResource) Read(ctx context.Context, req resource.ReadRequest, 
 	out, diags := modelFromSavedViewMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
 	shapeReadJSON(state.CompositeQuery, &out.CompositeQuery, imported, &resp.Diagnostics)
+	out = refreshed(state, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -203,7 +204,7 @@ func (r *SavedViewResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 	out, diags := modelFromSavedViewMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
-	out.CompositeQuery = plan.CompositeQuery
+	out = settled(plan, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

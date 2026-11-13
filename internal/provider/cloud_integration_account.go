@@ -146,7 +146,7 @@ func (r *CloudIntegrationAccountResource) Create(ctx context.Context, req resour
 		return
 	}
 	state.Credentials = plan.Credentials
-	state.Config = plan.Config
+	state = settled(plan, state)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -169,6 +169,7 @@ func (r *CloudIntegrationAccountResource) Read(ctx context.Context, req resource
 	}
 	out.Credentials = state.Credentials
 	shapeReadJSON(state.Config, &out.Config, imported, &resp.Diagnostics)
+	out = refreshed(state, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -199,7 +200,7 @@ func (r *CloudIntegrationAccountResource) Update(ctx context.Context, req resour
 		return
 	}
 	out.Credentials = state.Credentials
-	out.Config = plan.Config
+	out = settled(plan, out)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
