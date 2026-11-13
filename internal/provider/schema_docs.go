@@ -78,7 +78,7 @@ const (
 
 	docDashboardData = "Dashboard JSON document (`PostableDashboard` / `UpdatableDashboard`). Typically includes `title`, `description`, `tags`, `layout`, `widgets`, and `version` (often `v5` for current SigNoz layouts)."
 
-	docDashboardLocked = "Whether the dashboard is locked in the UI. Default: `false`."
+	docDashboardLocked = "Whether the dashboard is locked in the UI. Default: `false`. Only `false` can be set for now: the dashboard API this provider uses doesn't take it, so `true` is rejected; lock the dashboard in SigNoz's UI."
 
 	docDashboardSource = "Dashboard source identifier from the API (e.g. how the dashboard was created). Read-only."
 

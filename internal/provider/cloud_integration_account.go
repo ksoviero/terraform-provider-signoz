@@ -367,7 +367,13 @@ func credentialsAttribute() schema.StringAttribute {
 	a := normalizedJSONOptionalWithUnknown(docCloudCredentials, true)
 	a.PlanModifiers = append(a.PlanModifiers, stringplanmodifier.RequiresReplaceIf(
 		func(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
-			resp.RequiresReplace = !req.PlanValue.IsNull() && !req.StateValue.IsNull()
+			if req.PlanValue.IsNull() || req.StateValue.IsNull() {
+				return
+			}
+			// The same credentials written another way (reindented, jsonencode) aren't a change
+			planned, err1 := client.CanonicalJSON(req.PlanValue.ValueString())
+			prior, err2 := client.CanonicalJSON(req.StateValue.ValueString())
+			resp.RequiresReplace = err1 != nil || err2 != nil || planned != prior
 		},
 		"Changing credentials replaces the account: SigNoz takes them only on create.",
 		"Changing `credentials` replaces the account: SigNoz takes them only on create.",

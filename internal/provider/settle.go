@@ -42,7 +42,7 @@ func settled[T any](planned, read T, diags *diag.Diagnostics) T {
 			diags.AddWarning(
 				"SigNoz stored a value differently",
 				// Without the values: an attribute may be sensitive
-				fmt.Sprintf("SigNoz stored %s differently from the plan. The next plan will show the difference.",
+				fmt.Sprintf("SigNoz stored %s differently from the plan. State has the planned value until the next refresh reads SigNoz's; if you configured it, the plan will then show the difference.",
 					attributeName(pv.Type().Field(i))),
 			)
 		}
@@ -55,12 +55,24 @@ func settled[T any](planned, read T, diags *diag.Diagnostics) T {
 // attribute the API has as null and state as empty ("", 0, false, [] or {}), or the other way
 // round, keeps state's value. The API often leaves out an empty value, and they mean the same,
 // so neither shows as drift. JSON attributes are compared separately (shapedForState). After an
-// import (imported) state has nothing to keep yet, so it's all the API's.
+// import (imported) state has nothing to keep yet, so it's the API's, with "" as null.
 func refreshed[T any](prior, read T, imported bool, diags *diag.Diagnostics) T {
-	if imported {
-		return read
-	}
 	out := read
+	if imported {
+		// Nothing in state to keep, but an empty string is how SigNoz leaves a value unset:
+		// null, as a configuration that leaves it out has it. Other empties (false, 0) are
+		// the API's values, kept.
+		ov := reflect.ValueOf(&out).Elem()
+		if ov.Kind() != reflect.Struct {
+			return read
+		}
+		for i := 0; i < ov.NumField(); i++ {
+			if s, ok := ov.Field(i).Interface().(basetypes.StringValue); ok && ov.Type().Field(i).IsExported() && isEmptyValue(s) {
+				ov.Field(i).Set(reflect.ValueOf(basetypes.NewStringNull()))
+			}
+		}
+		return out
+	}
 	pv, ov, ok := modelValues(&prior, &out, diags)
 	if !ok {
 		return read

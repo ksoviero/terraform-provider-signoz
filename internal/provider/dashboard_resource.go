@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/ksoviero/terraform-provider-signoz/internal/client"
 )
@@ -55,6 +56,7 @@ func (r *DashboardResource) Schema(_ context.Context, _ resource.SchemaRequest, 
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
+				Validators:          []validator.Bool{lockedNotSupported{}},
 			},
 			"id": schema.StringAttribute{
 				MarkdownDescription: docID,
@@ -218,4 +220,24 @@ func (r *DashboardResource) Delete(ctx context.Context, req resource.DeleteReque
 func (r *DashboardResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 	markImported(ctx, resp)
+}
+
+// lockedNotSupported rejects locked = true: the dashboard API this provider uses (v1) doesn't take
+// it, so it was never sent, and the plan would show it on every run. SigNoz locks dashboards with
+// its v2 API's /lock, which rejects updates while locked.
+type lockedNotSupported struct{}
+
+func (lockedNotSupported) Description(context.Context) string {
+	return "locked = true isn't supported yet."
+}
+
+func (v lockedNotSupported) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (lockedNotSupported) ValidateBool(_ context.Context, req validator.BoolRequest, resp *validator.BoolResponse) {
+	if !req.ConfigValue.IsNull() && !req.ConfigValue.IsUnknown() && req.ConfigValue.ValueBool() {
+		resp.Diagnostics.AddAttributeError(req.Path, "locked can't be set yet",
+			"This provider can't lock a dashboard yet: the dashboard API it uses doesn't take locked, so it would never be sent. Lock the dashboard in SigNoz's UI, and leave locked out of the configuration.")
+	}
 }

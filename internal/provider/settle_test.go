@@ -3,10 +3,12 @@
 package provider
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -67,9 +69,29 @@ func TestRefreshed(t *testing.T) {
 	if !changed.Name.IsNull() {
 		t.Errorf("a value the API dropped didn't show as drift: %+v", changed)
 	}
-	// After an import, the API's false isn't kept as state's null
-	imported := refreshed(settleModel{Name: types.StringNull()}, settleModel{Name: types.StringValue("")}, true, &diags)
-	if !imported.Name.Equal(types.StringValue("")) {
-		t.Errorf("an import kept state's null: %+v", imported)
+	// After an import, the API's false isn't kept as state's null, and its "" is null
+	type importModel struct {
+		Name     types.String
+		Disabled types.Bool
+	}
+	imported := refreshed(importModel{Name: types.StringNull(), Disabled: types.BoolNull()},
+		importModel{Name: types.StringValue(""), Disabled: types.BoolValue(false)}, true, &diags)
+	if !imported.Name.IsNull() || !imported.Disabled.Equal(types.BoolValue(false)) {
+		t.Errorf("an import's values: %+v", imported)
+	}
+}
+
+func TestLockedNotSupported(t *testing.T) {
+	t.Parallel()
+
+	for _, tc := range []struct {
+		value   types.Bool
+		wantErr bool
+	}{{types.BoolValue(true), true}, {types.BoolValue(false), false}, {types.BoolNull(), false}} {
+		resp := &validator.BoolResponse{}
+		lockedNotSupported{}.ValidateBool(context.Background(), validator.BoolRequest{ConfigValue: tc.value}, resp)
+		if resp.Diagnostics.HasError() != tc.wantErr {
+			t.Errorf("locked = %s: error %v", tc.value, resp.Diagnostics)
+		}
 	}
 }
