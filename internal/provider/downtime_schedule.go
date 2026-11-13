@@ -156,6 +156,7 @@ func (r *DowntimeScheduleResource) Create(ctx context.Context, req resource.Crea
 	}
 	state, diags := modelFromDowntimeScheduleMap(ctx, created)
 	resp.Diagnostics.Append(diags...)
+	state.Schedule = plan.Schedule
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -172,6 +173,7 @@ func (r *DowntimeScheduleResource) Read(ctx context.Context, req resource.ReadRe
 	}
 	out, diags := modelFromDowntimeScheduleMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
+	shapeReadJSON(state.Schedule, &out.Schedule, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -198,6 +200,7 @@ func (r *DowntimeScheduleResource) Update(ctx context.Context, req resource.Upda
 	}
 	out, diags := modelFromDowntimeScheduleMap(ctx, m)
 	resp.Diagnostics.Append(diags...)
+	out.Schedule = plan.Schedule
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 

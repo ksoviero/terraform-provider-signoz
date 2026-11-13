@@ -303,16 +303,38 @@ func NormalizeRuleSpecJSON(raw string) (string, error) {
 	return CanonicalJSON(string(b))
 }
 
-// RuleSpecFromMap returns JSON for attributes stored in spec (everything except top-level fields).
+// ruleTopLevelFields are a rule's fields that have attributes of their own, outside spec.
+var ruleTopLevelFields = []string{
+	"id", "state", "alert", "alertType", "description", "ruleType", "disabled",
+	"labels", "annotations", "createdAt", "updatedAt", "createdBy", "updatedBy",
+}
+
+// RawRuleSpecFromMap returns the spec part of a rule as the API returned it, nothing pruned: what
+// a resource's spec is compared with (ShapeLike).
+func RawRuleSpecFromMap(full map[string]interface{}) (string, error) {
+	copy := make(map[string]interface{}, len(full))
+	for k, v := range full {
+		copy[k] = v
+	}
+	for _, k := range ruleTopLevelFields {
+		delete(copy, k)
+	}
+	b, err := json.Marshal(copy)
+	if err != nil {
+		return "", err
+	}
+	return CanonicalJSON(string(b))
+}
+
+// RuleSpecFromMap returns JSON for attributes stored in spec (everything except top-level
+// fields), tidied of the API's defaults: for imports and data sources. Resources compare their
+// spec with RawRuleSpecFromMap instead, so a default this misses never shows as drift there.
 func RuleSpecFromMap(full map[string]interface{}) (string, error) {
 	copy := make(map[string]interface{}, len(full))
 	for k, v := range full {
 		copy[k] = v
 	}
-	for _, k := range []string{
-		"id", "state", "alert", "alertType", "description", "ruleType", "disabled",
-		"labels", "annotations", "createdAt", "updatedAt", "createdBy", "updatedBy",
-	} {
+	for _, k := range ruleTopLevelFields {
 		delete(copy, k)
 	}
 
@@ -336,4 +358,22 @@ func stripTopLevelDuplicates(spec map[string]interface{}) {
 	for _, k := range []string{"evalWindow", "frequency"} {
 		delete(spec, k)
 	}
+}
+
+// RuleValuesEquivalent is the Equivalent for alert rule specs: the values the API rewrites. It
+// stores query function names in lower case (cumulativeSum as cumulativesum) and respaces the
+// lists in filter expressions.
+func RuleValuesEquivalent(path []string, want, got interface{}) bool {
+	w, ok1 := want.(string)
+	g, ok2 := got.(string)
+	if !ok1 || !ok2 || len(path) == 0 {
+		return false
+	}
+	switch last := path[len(path)-1]; {
+	case last == "name" && len(path) >= 3 && path[len(path)-3] == "functions":
+		return strings.EqualFold(w, g)
+	case last == "expression":
+		return normalizeFilterExpression(w) == normalizeFilterExpression(g)
+	}
+	return false
 }

@@ -303,6 +303,8 @@ func (r *AlertRuleResource) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	read := modelFromRuleMap(full, spec)
+	// The spec as planned: Read compares it with the API's on the fields it sets
+	read.model.Spec = plan.Spec
 	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
@@ -323,8 +325,21 @@ func (r *AlertRuleResource) Read(ctx context.Context, req resource.ReadRequest, 
 		resp.Diagnostics.AddError("Internal error", err.Error())
 		return
 	}
+	raw, err := client.RawRuleSpecFromMap(full)
+	if err != nil {
+		resp.Diagnostics.AddError("Internal error", err.Error())
+		return
+	}
 
 	read := modelFromRuleMap(full, spec)
+	shaped, ok, err := keepConfigShape(state.Spec.StringValue, raw, client.RuleValuesEquivalent)
+	if err != nil {
+		resp.Diagnostics.AddError("Internal error", err.Error())
+		return
+	}
+	if ok {
+		read.model.Spec = alertRuleSpecValue{StringValue: basetypes.NewStringValue(shaped)}
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 
@@ -359,6 +374,8 @@ func (r *AlertRuleResource) Update(ctx context.Context, req resource.UpdateReque
 	}
 
 	read := modelFromRuleMap(full, spec)
+	// The spec as planned: Read compares it with the API's on the fields it sets
+	read.model.Spec = plan.Spec
 	resp.Diagnostics.Append(resp.State.Set(ctx, &read.model)...)
 }
 

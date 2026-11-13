@@ -161,3 +161,29 @@ func normalizedJSONComputedSensitive(markdown string) schema.StringAttribute {
 		},
 	}
 }
+
+// keepConfigShape is what a resource's Read keeps in state for a JSON attribute: the API's value
+// (api) compared with what's in state (prior) on the fields prior sets only, so defaults the API
+// adds never show as drift (client.ShapeLike). With nothing in state (an import) it's api.
+// Create and Update keep the planned value itself. ok is false with nothing in state (an import):
+// the resource then keeps what it read.
+func keepConfigShape(prior basetypes.StringValue, api string, eq client.Equivalent) (shaped string, ok bool, err error) {
+	if prior.IsNull() || prior.IsUnknown() || prior.ValueString() == "" {
+		return "", false, nil
+	}
+	shaped, err = client.ShapeLike(prior.ValueString(), api, eq)
+	return shaped, err == nil, err
+}
+
+// shapeReadJSON replaces read, a JSON attribute as a Read got it from the API, with what to keep
+// in state given prior (keepConfigShape), for attributes the API doesn't rewrite values in.
+func shapeReadJSON(prior jsontypes.Normalized, read *jsontypes.Normalized, diags *diag.Diagnostics) {
+	shaped, ok, err := keepConfigShape(prior.StringValue, read.ValueString(), nil)
+	if err != nil {
+		diags.AddError("Internal error", err.Error())
+		return
+	}
+	if ok {
+		*read = newNormalizedJSON(shaped)
+	}
+}

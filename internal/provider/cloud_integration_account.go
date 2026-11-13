@@ -146,6 +146,7 @@ func (r *CloudIntegrationAccountResource) Create(ctx context.Context, req resour
 		return
 	}
 	state.Credentials = plan.Credentials
+	state.Config = plan.Config
 	resp.Diagnostics.Append(resp.State.Set(ctx, &state)...)
 }
 
@@ -166,6 +167,7 @@ func (r *CloudIntegrationAccountResource) Read(ctx context.Context, req resource
 		return
 	}
 	out.Credentials = state.Credentials
+	shapeReadJSON(state.Config, &out.Config, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
@@ -196,6 +198,7 @@ func (r *CloudIntegrationAccountResource) Update(ctx context.Context, req resour
 		return
 	}
 	out.Credentials = state.Credentials
+	out.Config = plan.Config
 	resp.Diagnostics.Append(resp.State.Set(ctx, &out)...)
 }
 
