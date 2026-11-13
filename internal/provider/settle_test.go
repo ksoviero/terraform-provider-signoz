@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
@@ -92,6 +93,27 @@ func TestLockedNotSupported(t *testing.T) {
 		lockedNotSupported{}.ValidateBool(context.Background(), validator.BoolRequest{ConfigValue: tc.value}, resp)
 		if resp.Diagnostics.HasError() != tc.wantErr {
 			t.Errorf("locked = %s: error %v", tc.value, resp.Diagnostics)
+		}
+	}
+}
+
+func TestCredentialsUnsent(t *testing.T) {
+	t.Parallel()
+
+	creds := func(s string) jsontypes.Normalized { return jsontypes.NewNormalizedValue(s) }
+	for _, tc := range []struct {
+		name           string
+		planned, prior jsontypes.Normalized
+		ok, warn       bool
+	}{
+		{"the same, written another way", creds(`{"a": 1}`), creds(`{"a":1}`), true, false},
+		{"none planned", jsontypes.NewNormalizedNull(), creds(`{"a":1}`), true, false},
+		{"new after an import", creds(`{"a":1}`), jsontypes.NewNormalizedNull(), true, true},
+		{"changed", creds(`{"a":2}`), creds(`{"a":1}`), false, false},
+	} {
+		var diags diag.Diagnostics
+		if ok := credentialsUnsent(tc.planned, tc.prior, &diags); ok != tc.ok || (diags.WarningsCount() > 0) != tc.warn || diags.HasError() == ok {
+			t.Errorf("%s: ok %v, %v", tc.name, ok, diags)
 		}
 	}
 }

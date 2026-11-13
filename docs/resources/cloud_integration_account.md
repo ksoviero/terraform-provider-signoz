@@ -22,7 +22,7 @@ Manages a SigNoz cloud integration account (`/api/v1/cloud_integrations/{cloud_p
 
 ### Optional
 
-- `credentials` (String, Sensitive) JSON credentials (`CloudintegrationtypesCredentials`) required on create: `sigNozApiUrl`, `sigNozApiKey`, `ingestionUrl`, `ingestionKey`. SigNoz takes credentials only on create, so changing them replaces the account (as does credentials that are known only after apply); taking them out of the configuration after create keeps the account and drops them from state. Sensitive.
+- `credentials` (String, Sensitive) JSON credentials (`CloudintegrationtypesCredentials`) required on create: `sigNozApiUrl`, `sigNozApiKey`, `ingestionUrl`, `ingestionKey`. SigNoz takes credentials only on create, so changing them replaces the account (credentials known only after apply are checked then: if they changed, the apply fails, asking for `-replace`; added to an imported account, they're recorded but not sent); taking them out of the configuration after create keeps the account and drops them from state. Sensitive.
 
 ### Read-Only
 

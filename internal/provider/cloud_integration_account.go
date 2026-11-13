@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	dataschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -175,6 +176,9 @@ func (r *CloudIntegrationAccountResource) Update(ctx context.Context, req resour
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() || r.client == nil {
+		return
+	}
+	if !credentialsUnsent(plan.Credentials, state.Credentials, &resp.Diagnostics) {
 		return
 	}
 	body, err := client.BuildCloudAccountUpdateBody(plan.Config.ValueString())
@@ -370,9 +374,10 @@ func credentialsAttribute() schema.StringAttribute {
 			if req.PlanValue.IsNull() || req.StateValue.IsNull() {
 				return
 			}
-			// Credentials known only after apply may differ, and can't be sent then: replace
+			// Known only after apply (say, from another resource being updated), they're
+			// most often the same: Update checks them once known, rather than recreating
+			// the account for a value that may not change
 			if req.PlanValue.IsUnknown() {
-				resp.RequiresReplace = true
 				return
 			}
 			// The same credentials written another way (reindented, jsonencode) aren't a change
@@ -384,4 +389,27 @@ func credentialsAttribute() schema.StringAttribute {
 		"Changing `credentials` replaces the account: SigNoz takes them only on create.",
 	))
 	return a
+}
+
+// credentialsUnsent checks the credentials an Update has, which SigNoz can't take (only on
+// create): the same as in state is fine; new ones where state has none (after an import) are
+// recorded with a warning that they weren't sent; different ones, known only now (the plan had
+// them unknown), are an error, as they'd need the account replaced. False stops the Update.
+func credentialsUnsent(planned, prior jsontypes.Normalized, diags *diag.Diagnostics) bool {
+	if planned.IsNull() {
+		return true
+	}
+	if prior.IsNull() {
+		diags.AddAttributeWarning(path.Root("credentials"), "Credentials not sent",
+			"SigNoz takes a cloud account's credentials only on create, so these are recorded in state but weren't sent. To use them, replace the account (terraform apply -replace).")
+		return true
+	}
+	p, err1 := client.CanonicalJSON(planned.ValueString())
+	s, err2 := client.CanonicalJSON(prior.ValueString())
+	if err1 == nil && err2 == nil && p == s {
+		return true
+	}
+	diags.AddAttributeError(path.Root("credentials"), "Credentials changed",
+		"The credentials changed, but SigNoz takes a cloud account's credentials only on create. Replace the account to use them (terraform apply -replace).")
+	return false
 }

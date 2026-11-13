@@ -185,7 +185,7 @@ const (
 	docCloudConfig = "JSON account configuration (`CloudintegrationtypesPostableAccountConfig`). For AWS include `aws.deploymentRegion` and `aws.regions`; for Azure include `azure` per OpenAPI."
 
 	docCloudCredentials = "JSON credentials (`CloudintegrationtypesCredentials`) required on create: `sigNozApiUrl`, `sigNozApiKey`, `ingestionUrl`, `ingestionKey`. " +
-		"SigNoz takes credentials only on create, so changing them replaces the account (as does credentials that are known only after apply); taking them out of the configuration after create keeps the account and drops them from state. Sensitive."
+		"SigNoz takes credentials only on create, so changing them replaces the account (credentials known only after apply are checked then: if they changed, the apply fails, asking for `-replace`; added to an imported account, they're recorded but not sent); taking them out of the configuration after create keeps the account and drops them from state. Sensitive."
 
 	docCloudAccountProvider = "Provider slug on the account object returned by the API (e.g. `aws`, `azure`). Read-only."
 
